@@ -1,0 +1,18 @@
+group	reads	ITS_found	SSU_found	LSU_found	all_three_ge300	pct_all_three	median_SSU	median_ITS	median_LSU
+Glomeromycota	520	520	520	520	519	99.8	1220	466	2423
+Agaricales	547	547	547	547	547	100.0	1218	608	2287
+Hypocreales	514	505	505	505	505	98.2	1212	492	2233
+Rhabditida	518	515	515	515	512	98.8	1209	715	2502
+other: Cercozoa	244	244	244	244	244	100.0	1225	837	2462
+other: Ciliophora	158	158	158	158	156	98.7	1191	485	2254
+other: Dinoflagellata	143	143	143	143	143	100.0	1215	566	2354
+other: Ascomycota	139	139	139	139	138	99.3	1215	496	2242
+other: Apicomplexa	81	81	81	81	78	96.3	1196	442	2201
+other: Rozellomycota	81	81	81	81	80	98.8	1199	544	2299
+other: Basidiomycota	71	71	71	71	71	100.0	1217	567	2277
+other: Labyrinthulidia	67	67	67	67	67	100.0	1235	486	2315
+other: Bacillariophyta	62	62	62	62	62	100.0	1216	730	2176
+other: Chlorophyta	57	57	57	57	57	100.0	1210	651	2230
+other: Evosea	54	54	54	54	54	100.0	1311	696	2510
+other: Chrysophyta	50	50	50	50	50	100.0	1213	666	2183
+ALL	3994	3970	3970	3970	3954	99.0	1218	588	2349
