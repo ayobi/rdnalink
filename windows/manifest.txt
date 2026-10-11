@@ -1,0 +1,16 @@
+Sat Oct 10 15:11:25 -03 2026
+itsxrust 0.3.0
+barrnap 1.10.5
+seqkit v2.14.0
+Python 3.11.17
+18.8cc5c
+536e3e10e4753e7123975e492d124ef5e94fd7a4e96964bc6039a66bf858166e  ../ref/eukaryome_v2.1/General_EUK_longread_v2.1.fasta
+d373e4a1c1a25e99ca8d053b814091cc4e45c1a18a5cfa7e848c0a9c8ed1c598  ../scripts/check_ssu_end.py
+f88f3c5040d2e2d46d29c5b411cfe9d146573c8d45ca5d690a19451e41690065  ../scripts/cut_windows.py
+2380dec4ff563b32e857601bf29c46812b384be5bcd441c1dd0414d3e5976678  ../scripts/pilot_windows.py
+b3ec9d8065892afe1cbadf124969b77748197e710284239accf2ba1a04a15be7  itsx.full.fasta
+f8b325239e632e2737ac14ada6f34a129a4dc45824428df5dbbf7d87b2c46829  barrnap_fast.gff
+1ad07a26af5e803b95ca506f8cb6552e6aa8426bd938621d3f97caad72004c30  win.full.fasta
+21f422e07cfc2bbf6e259eb64e85e5d4a39d9e7dbf164f25a725fe89dc17c673  win.lsu.fasta
+3ca7ef5c9d2d577c0ee9574f892094ec5c4ada307260290633a7e832e8785472  win.ssu.fasta
+2019428f0daca9a9e832d50a0a0a4d0580bafab2343d80a26dd7b56721e13db9  win.log.tsv
