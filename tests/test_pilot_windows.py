@@ -2,7 +2,7 @@
 
 Runs the real ITSxRust and barrnap on the 3,994 pilot reads (`pilot/pilot.fasta`) and compares every read's
 status, source, strand and ITS bounds with `pilot/cut_hybridfastjm.log.tsv`, the pilot log of the rule Amendment 1
-fixed (ITSxRust first, then barrnap --fast with the join and 18S-end rules). Takes about 10 minutes on 8 threads.
+fixed (ITSxRust first, then barrnap --fast with the join and 18S-end rules). Takes about 8-10 minutes.
 Windows only: no search, no report, nothing scored. Opt in with
 
     RDNALINK_HMM=/path/to/F.hmm pytest tests/test_pilot_windows.py

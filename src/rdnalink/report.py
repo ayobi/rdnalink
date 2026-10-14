@@ -26,6 +26,7 @@ import math
 import os
 
 from .motifs import paralog_flag
+from .reference import resolve
 from .seqio import read_fasta, read_id
 from .taxonomy import names
 
@@ -78,6 +79,7 @@ def genus_lead(hl, genus, full):
 
 def report(hits_dir, query_prefix, ref_prefix, out_tsv, top=300, lead=1.0, min_identity=None, drop_self=True):
     min_identity = min_identity or {}
+    ref_prefix = resolve(ref_prefix)[0]
     sp, ge = {}, {}
     for m in MARKERS:
         for h, _ in read_fasta(f'{ref_prefix}.{m}.fasta'):

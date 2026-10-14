@@ -16,16 +16,26 @@ follow them.
 
 ```
 conda env create -f environment.yml && conda activate rdnalink && pip install -e .
-rdnalink windows reads.fasta -o reads --hmm path/to/itsxrust/data/hmm/F.hmm -t 8
-rdnalink windows reference.fasta -o ref --hmm path/to/itsxrust/data/hmm/F.hmm -t 8
+rdnalink ref reference.fasta -o ref --hmm F.hmm -t 8            # once per reference
+rdnalink windows reads.fasta -o reads --hmm F.hmm -t 8
 rdnalink search -q reads -r ref -o hits -t 8
 rdnalink report -q reads -r ref --hits hits -o report.tsv
 ```
 
+`F.hmm` is ITSxRust's fungal profile (`data/hmm/F.hmm` in the [ITSxRust](https://github.com/ayobi/itsxrust)
+repository; SHA-256 `a8c38c5c...` at v0.3.0).
+
+- `ref` builds a reference folder once: it cuts the windows, merges identical ones, builds one MMseqs2 index per
+  marker and writes `manifest.json` (SHA-256 of the reads and the HMM, tool versions, parameters and counts).
+  `search` and `report` take the folder wherever they take a window prefix, and a search against it gives the same
+  hits as a search against its windows, without rebuilding the indexes each time. `--windows PREFIX` builds the
+  folder from windows already cut. On a machine with less than about 10 GB of RAM, add `--kmer 13`; searches of
+  the folder then use it too.
 - `windows` cuts the windows as Amendment 1 does: ITSxRust where it finds the full ITS, barrnap with the join and
   18S-end rules for the rest, in chunks of 4,000 reads.
-- `search` runs one exhaustive MMseqs2 search per window, as note 2 describes. On a machine with less than about
-  10 GB of RAM, add `--kmer 13`.
+- `search` runs one exhaustive MMseqs2 search per window, as note 2 describes. Hits are ranked by identity, then
+  identical positions, then target ID; bit scores and E-values are kept but not used (MMseqs2's bit scores can
+  differ by a few bits between runs of the same search).
 - `report` writes one row per read. For each marker it gives the best identity, the unique best species and genus,
   and the genus's lead. It then gives the linked species and genus (all three markers agree), the ITS-only
   species, a conflict flag (two markers confidently name different genera), a label conflict (all three
@@ -34,14 +44,20 @@ rdnalink report -q reads -r ref --hits hits -o report.tsv
 
 Identity thresholds are off by default (`--min-identity`). The test will say which ones to use.
 
-Checked so far: on the 903 culture copies of the AMF benchmark, `windows` cut every copy, and its ITS windows are
-identical to the benchmark's full ITS. `report` flagged exactly the 41 short-5.8S copies of *Rhizophagus*. In 20
-synthetic chimeras (SSU and ITS of one genus, LSU of another), `report` flagged all 20 as conflicts. These are
-functional checks, not the test.
+Checked so far (functional checks, not the test):
 
-`pytest tests` runs the unit tests. `RDNALINK_HMM=/path/to/F.hmm pytest tests/test_pilot_windows.py` also runs the
-real ITSxRust and barrnap on the 3,994 pilot reads and checks every read's windows against Amendment 1's pilot log
-(about 10 minutes; windows only, nothing scored).
+- On the 3,994 pilot reads, `windows` gives every read the status, strand and ITS bounds Amendment 1 fixed (3,774
+  cut by ITSxRust, 197 by barrnap, 23 rejected), running the real ITSxRust 0.3.0 and barrnap 1.10.5 on macOS.
+- On 400 pilot reads outside the four test groups, a search against a `ref` folder and a search against its
+  windows give the same hits, ranks and identities, row for row.
+- On the 903 culture copies of the AMF benchmark, `windows` cut every copy, and its ITS windows are identical to
+  the benchmark's full ITS. `report` flagged exactly the 41 short-5.8S copies of *Rhizophagus*. In 20 synthetic
+  chimeras (SSU and ITS of one genus, LSU of another), `report` flagged all 20 as conflicts.
+
+`pytest tests` runs the unit tests, and with `mmseqs` on the PATH also checks a `ref` search against a plain one.
+`RDNALINK_HMM=/path/to/F.hmm pytest tests/test_pilot_windows.py` runs the real ITSxRust and barrnap on the 3,994
+pilot reads and checks every read's windows against Amendment 1's pilot log (about 8 minutes on a laptop; windows
+only, nothing scored).
 
 ## Questions
 

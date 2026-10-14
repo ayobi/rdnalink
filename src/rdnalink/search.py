@@ -4,12 +4,15 @@
   k-mer hit is aligned (a capped prefilter lost hits that belong in the top ranks in the test's pilots).
 - A hit counts when the alignment covers >= 80% of the shorter of the two windows. Identity = identical
   positions / alignment columns. Hits are ranked by identity, then identical positions, then target ID; bit scores
-  and E-values are kept but never used for ranking.
+  and E-values are kept but never used for ranking (MMseqs2's bit scores can differ by a few bits between runs of
+  the same search). Queries are written in sorted order, so a rerun gives the same rows in the same order.
 - Identical windows are searched once and their hits copied to every read that carries them.
 - The best --keep hits per query and marker are stored (300 by default, as the test's calls read), plus any hits
   tied with the last one. A query that is also in the reference keeps its self hit, marked in the 'self' column.
 
-Writes <out>/<marker>.hits.tsv.gz and <out>/search.log; a finished chunk is kept, so a stopped run resumes.
+The reference is a window prefix, or a folder built by `rdnalink ref`, whose distinct windows and indexes are then
+used as they are (the same ones this module would build). Writes <out>/<marker>.hits.tsv.gz and <out>/search.log;
+a finished chunk is kept, so a stopped run resumes.
 """
 import collections
 import gzip
@@ -18,19 +21,20 @@ import shutil
 import subprocess
 import sys
 
-from .seqio import read_fasta, read_id
+from .reference import resolve, target_db
+from .seqio import read_fasta, read_id, sha256
 
 MARKERS = ('ssu', 'its', 'lsu')
 COLS = 'query,target,nident,alnlen,qstart,qend,qlen,tstart,tend,tlen,bits,evalue'
 HEADER = 'query\ttarget\trank\tidentity\tnident\talnlen\tqlen\ttlen\tqcov\ttcov\tbits\tevalue\tself\n'
 
 
-def _run(cmd, log):
+def _run(cmd, log, hint=''):
     log.write('$ ' + ' '.join(cmd) + '\n')
     log.flush()
     p = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT)
     if p.returncode:
-        sys.exit(f'failed ({p.returncode}): {" ".join(cmd)}; see {log.name}')
+        sys.exit(f'failed ({p.returncode}): {" ".join(cmd)}; see {log.name}' + (f'\n{hint}' if hint else ''))
 
 
 def _windows(prefix, marker):
@@ -40,7 +44,41 @@ def _windows(prefix, marker):
     sys.exit(f'no {prefix}.{marker}.fasta(.gz); run rdnalink windows first')
 
 
+def distinct_windows(t):
+    """{read: window} -> {representative: [reads carrying that window]}; the representative is the first read ID
+    in sort order."""
+    by_seq = collections.defaultdict(list)
+    for r, s in t.items():
+        by_seq[s].append(r)
+    members = {}
+    for rs in by_seq.values():
+        rs.sort()
+        members[rs[0]] = rs
+    return members
+
+
+def build_target(d, t, members, mmseqs, threads, kmer, log):
+    """MMseqs2 database and index of the distinct windows in folder d; skipped when already built."""
+    os.makedirs(d, exist_ok=True)
+    tdb = os.path.join(d, 'tdb')
+    if not os.path.exists(tdb + '.done'):
+        with open(os.path.join(d, 'target.fasta'), 'w') as fh:
+            for rep in sorted(members):
+                fh.write(f'>{rep}\n{t[rep]}\n')
+        _run([mmseqs, 'createdb', os.path.join(d, 'target.fasta'), tdb, '--dbtype', '2'], log)
+        _run([mmseqs, 'createindex', tdb, os.path.join(d, 'idxtmp'), '--search-type', '3', '--strand', '1',
+              '--threads', str(threads)] + (['-k', str(kmer)] if kmer else []), log,
+             hint='If the log says the database does not fit into memory: the default k-mer size (15) needs about '
+                  '10 GB of RAM; use --kmer 13.')
+        shutil.rmtree(os.path.join(d, 'idxtmp'), ignore_errors=True)
+        open(tdb + '.done', 'w').close()
+    return tdb
+
+
 def _rank_and_write(raw, fo, members_t, members_q, keep, min_cov):
+    # Queries are written in sorted order: MMseqs2 returns them in an order that varies with thread scheduling.
+    lines = {}
+
     def flush(uq, rows):
         rows.sort(key=lambda x: (-x[0], -x[3], x[2]))
         take, n = [], 0
@@ -53,10 +91,9 @@ def _rank_and_write(raw, fo, members_t, members_q, keep, min_cov):
         exp = sorted(((r[0], r[3], t, r) for r in take for t in members_t[r[2]]), key=lambda x: (-x[0], -x[1], x[2]))
         last = exp[keep - 1][:2] if len(exp) >= keep else None
         exp = [x for i, x in enumerate(exp) if i < keep or (last and x[:2] == last)]
-        for qread in members_q[uq]:
-            for i, (idn, _, t, r) in enumerate(exp, 1):
-                fo.write(f'{qread}\t{t}\t{i}\t{idn:.4f}\t{r[3]}\t{r[4]}\t{r[5]}\t{r[6]}\t{r[7]:.4f}\t{r[8]:.4f}\t'
-                         f'{r[1]}\t{r[9]}\t{int(t == qread)}\n')
+        lines[uq] = [f'{qread}\t{t}\t{i}\t{idn:.4f}\t{r[3]}\t{r[4]}\t{r[5]}\t{r[6]}\t{r[7]:.4f}\t{r[8]:.4f}\t'
+                     f'{r[1]}\t{r[9]}\t{int(t == qread)}\n'
+                     for qread in members_q[uq] for i, (idn, _, t, r) in enumerate(exp, 1)]
     cur, rows = None, []
     with open(raw) as fh:
         for line in fh:
@@ -74,25 +111,27 @@ def _rank_and_write(raw, fo, members_t, members_q, keep, min_cov):
             rows.append((100 * nid / aln, float(v[10]), v[1], nid, aln, ql, tl, qc, tc, v[11]))
         if cur is not None:
             flush(cur, rows)
+    for uq in sorted(lines):
+        fo.writelines(lines[uq])
 
 
 def search(query_prefix, ref_prefix, out, mmseqs='mmseqs', threads=4, keep=300, min_cov=0.8, sens=5.7,
            chunk=200, markers=MARKERS, kmer=0):
     if shutil.which(mmseqs) is None and not os.path.exists(mmseqs):
         sys.exit(f'{mmseqs} not found on PATH')
+    ref_windows, man = resolve(ref_prefix)
+    if man:
+        if kmer and kmer != man['mmseqs']['kmer']:
+            sys.exit(f'{ref_prefix} was indexed with --kmer {man["mmseqs"]["kmer"] or "default"}; '
+                     f'search it with that, or rebuild it')
+        kmer = man['mmseqs']['kmer']
     os.makedirs(out, exist_ok=True)
     log = open(os.path.join(out, 'search.log'), 'a')
     summary = {}
     for m in markers:
-        q, t = _windows(query_prefix, m), _windows(ref_prefix, m)
-        by_seq = collections.defaultdict(list)
-        for r, s in t.items():
-            by_seq[s].append(r)
-        members_t, rep_of = {}, {}
-        for s, rs in by_seq.items():
-            rs.sort()
-            members_t[rs[0]] = rs
-            rep_of[s] = rs[0]
+        q, t = _windows(query_prefix, m), _windows(ref_windows, m)
+        members_t = distinct_windows(t)
+        rep_of = {t[rep]: rep for rep in members_t}
         qseq = {}
         members_q = collections.defaultdict(list)
         for r, s in q.items():
@@ -102,15 +141,14 @@ def search(query_prefix, ref_prefix, out, mmseqs='mmseqs', threads=4, keep=300, 
         uq = sorted(members_q)
         d = os.path.join(out, 'work', m)
         os.makedirs(d, exist_ok=True)
-        tdb = os.path.join(d, 'tdb')
-        if not os.path.exists(tdb + '.done'):
-            with open(os.path.join(d, 'target.fasta'), 'w') as fh:
-                for rep in sorted(members_t):
-                    fh.write(f'>{rep}\n{t[rep]}\n')
-            _run([mmseqs, 'createdb', os.path.join(d, 'target.fasta'), tdb, '--dbtype', '2'], log)
-            _run([mmseqs, 'createindex', tdb, os.path.join(d, 'idxtmp'), '--search-type', '3', '--strand', '1',
-                  '--threads', str(threads)] + (['-k', str(kmer)] if kmer else []), log)
-            open(tdb + '.done', 'w').close()
+        if man:
+            if sha256(f'{ref_windows}.{m}.fasta') != man['markers'][m]['windows_sha256']:
+                sys.exit(f'{ref_windows}.{m}.fasta has changed since {ref_prefix} was built; rebuild it')
+            tdb = target_db(ref_prefix, m)
+            if not os.path.exists(tdb + '.done'):
+                sys.exit(f'{tdb} is missing; rebuild {ref_prefix}')
+        else:
+            tdb = build_target(d, t, members_t, mmseqs, threads, kmer, log)
         cap = str(len(members_t) + 1)
         params = ['--search-type', '3', '-s', str(sens), '--max-seqs', cap, '--max-accept', cap, '-e', '1e6',
                   '--strand', '1', '-a', '--threads', str(threads)] + (['-k', str(kmer)] if kmer else [])
