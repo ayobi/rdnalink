@@ -39,7 +39,9 @@ identical to the benchmark's full ITS. `report` flagged exactly the 41 short-5.8
 synthetic chimeras (SSU and ITS of one genus, LSU of another), `report` flagged all 20 as conflicts. These are
 functional checks, not the test.
 
-`pytest tests` runs the unit tests.
+`pytest tests` runs the unit tests. `RDNALINK_HMM=/path/to/F.hmm pytest tests/test_pilot_windows.py` also runs the
+real ITSxRust and barrnap on the 3,994 pilot reads and checks every read's windows against Amendment 1's pilot log
+(about 10 minutes; windows only, nothing scored).
 
 ## Questions
 
@@ -118,6 +120,14 @@ Tool versions, parameters and input and output hashes are written to a `manifest
 - [amf-novelty-benchmark](https://github.com/ayobi/amf-novelty-benchmark): the AMF culture benchmark behind the
   Glomeromycota group.
 - [ITSxRust](https://github.com/ayobi/itsxrust): the ITS boundary finder used to cut the windows.
+- EUKARYOME's curation already compares markers: for (meta)genome and (meta)transcriptome data it removes taxa
+  whose per-marker BLASTn matches conflict at genus, order or kingdom level (Tedersoo et al. 2024). The conflict
+  flag applies the same idea to any long read, with stated thresholds, and K1 measures how often it is right.
+  `protocol/NOTE4_eukaryome_checks.md` records what EUKARYOME's documented checks cover.
+- Hakimzadeh et al. (2025) Are we throwing away good data? Evaluation of chimera detection algorithms on long-read
+  amplicons reveals high false-positive rates across algorithms. *PeerJ* 13:e20456. Of the full-ITS reads each
+  de novo tool flagged, 9.8% (uchime_denovo) to 55.0% (chimeras_denovo) matched a EUKARYOME reference at >= 99%
+  identity and coverage.
 
 ## Licence
 
