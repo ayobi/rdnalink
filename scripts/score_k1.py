@@ -20,7 +20,10 @@ and 50 F2 drawn at random (seed 20261007) from the real flags of all four groups
 precision_sample.tsv lists each read with its 20 best remaining hits per marker for the tree check.
 
   python3 scripts/score_k1.py --search search --fasta ref/eukaryome_v2.1/General_EUK_longread_v2.1.fasta \\
-      --folds folds --spikeins spikeins/spikeins.tsv --out scores/k1
+      --folds folds --spikeins spikeins/spikeins.tsv --out scores/k1 [--drop-reads FILE]
+
+--drop-reads (Amendment 1, original protocol: the barrnap-cut reads) leaves those reads out as queries, as
+spike-in sources and as hits; as for folds, they are skipped in the hit lists, so ranks never move up.
 """
 import argparse
 import collections
@@ -80,20 +83,26 @@ def main():
     ap.add_argument('--spikeins', required=True)
     ap.add_argument('--out', required=True)
     ap.add_argument('--groups', nargs='*', default=GROUPS)
+    ap.add_argument('--drop-reads', help='file of read IDs left out as queries, spike-in sources and hits '
+                                         '(Amendment 1 original protocol: the barrnap-cut reads)')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     sp, ge = taxonomy(a.fasta)
+    drop = set()
+    if a.drop_reads:
+        drop = {line.split()[0] for line in open(a.drop_reads) if line.strip()}
     genus = {r: g for r, g in ge.items() if g}
     group = {}
     with open(os.path.join(a.search, 'queries.tsv')) as fh:
         next(fh)
         for line in fh:
             r, g = line.rstrip('\n').split('\t')[:2]
-            group[r] = g
+            if r not in drop:
+                group[r] = g
     keep = set(group)
     hits = {}
     for m in MARKERS:
-        hits[m], _ = load_hits(os.path.join(a.search, f'{m}.hits.tsv.gz'), keep, TOP, set())
+        hits[m], _ = load_hits(os.path.join(a.search, f'{m}.hits.tsv.gz'), keep, TOP)
     with_hits = {r for r in keep if all(r in hits[m] for m in MARKERS)}
     use_ge = collections.defaultdict(set)
     with open(os.path.join(a.folds, 'units.tsv')) as fh:
@@ -113,7 +122,8 @@ def main():
             vals = []
             for r in pool:
                 idn, tg = hits[m][r]
-                v = next((float(i) for i, t in zip(idn, tg) if t != r and genus.get(t) == ge[r]), None)
+                v = next((float(i) for i, t in zip(idn, tg) if t != r and t not in drop and genus.get(t) == ge[r]),
+                         None)
                 if v is None:
                     v = float(idn[-1]) if full[m][r] and len(idn) else 0.0
                 vals.append(v)
@@ -133,7 +143,7 @@ def main():
         grp = group[r]
         if grp not in a.groups:
             continue
-        calls, (f1, f2) = score({m: r for m in MARKERS}, {r}, grp, ge[r])
+        calls, (f1, f2) = score({m: r for m in MARKERS}, {r} | drop, grp, ge[r])
         row = [grp, r, ge[r] or '']
         for m in MARKERS:
             g0, b, ld, c = calls[m]
@@ -156,8 +166,8 @@ def main():
                 continue
             w = {'ssu': x['ssu_read'], 'its': x['its_read'], 'lsu': x['lsu_read']}
             if not all(w[m] in with_hits for m in MARKERS):
-                continue
-            held = set(w.values())
+                continue                            # includes spike-ins with a dropped source read
+            held = set(w.values()) | drop
             label = x['label_genus'] if x['kind'] == 'swap' else x['genus_x']
             calls, (f1, f2) = score(w, held, grp, label)
             caught = f1 if x['kind'] != 'swap' else f2
@@ -177,7 +187,7 @@ def main():
         for r in sorted(pick):
             for m in MARKERS:
                 idn, tg = hits[m][r]
-                top = [(t, float(i)) for i, t in zip(idn, tg) if t != r][:N_HITS_TREE]
+                top = [(t, float(i)) for i, t in zip(idn, tg) if t != r and t not in drop][:N_HITS_TREE]
                 sample.append([typ, group[r], r, ge[r] or '', m] + [f'{t}:{i:.2f}' for t, i in top])
 
     def write(fn, head, rows):
@@ -213,6 +223,7 @@ def main():
         for p in [os.path.join(a.search, f'{m}.hits.tsv.gz') for m in MARKERS] + [a.spikeins,
                                                                                  os.path.join(a.folds, 'units.tsv')]:
             fh.write(f'input\t{p}\t{sha256(p)}\n')
+        fh.write(f'drop_reads\t{a.drop_reads}\t{len(drop)}\n')
         fh.write(f'seed\t{SEED}\nlead\t{LEAD}\nranks\t{TOP}\n')
     print('recall (pooled): ' + ', '.join(f'{r[1]} {r[4]}%' for r in rows if r[0] == 'all'))
     print(f'real flags: F1 {len(real["F1"])}, F2 {len(real["F2"])}; precision sample written; see {a.out}')

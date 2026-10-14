@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this code, protocol or data, please cite the archived release."
+title: "rdnalink: a pre-registered test of linked SSU-ITS-LSU species calls, and a prototype package"
+type: software
+authors:
+  - family-names: "O'Brien"
+    given-names: "Aaron"
+license: "MIT"
+repository-code: "https://github.com/ayobi/rdnalink"
+doi: "10.5281/zenodo.23374303"
+version: "0.1.1"
+date-released: "2026-10-14"
+abstract: >-
+  Phase 0 protocol, amendments, code and fixed inputs for testing whether linking the SSU, ITS and LSU of one
+  long rDNA read gives better species calls than the ITS alone, on the EUKARYOME v2.1 long-read set; and a
+  prototype Python package (rdnalink) that runs the same method on any long reads. Protocols and outputs are
+  CC BY 4.0 (DATA_LICENSE.md); EUKARYOME-derived reads keep EUKARYOME's CC BY 4.0 terms.
+keywords:
+  - rDNA
+  - long reads
+  - EUKARYOME
+  - species identification
+  - chimera detection
+  - pre-registration

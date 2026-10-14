@@ -69,10 +69,11 @@ def sha256(path):
     return h.hexdigest()
 
 
-def load_hits(path, keep, depth, drop):
+def load_hits(path, keep, depth):
     """query -> (identities, targets) for ranks <= depth, self included, and query -> targets identical over the
-    whole window (identity 100, alignment = both window lengths). Reads in drop leave the lists after the rank
-    cut, so lower ranks never move up (Amendment 1, original protocol)."""
+    whole window (identity 100, alignment = both window lengths). Every target stays in its list: reads left out
+    (a fold's held-out reads, or --drop-reads) are skipped where the lists are read, so ranks never move up and a
+    list keeps its length (note 2; Amendment 1, original protocol)."""
     out, same = {}, collections.defaultdict(set)
     rows = collections.defaultdict(list)
     with gzip.open(path, 'rt') as fh:
@@ -85,8 +86,6 @@ def load_hits(path, keep, depth, drop):
             if q not in keep or int(v[ir]) > depth:
                 continue
             t = sys.intern(read_id(v[it]))
-            if t in drop:
-                continue
             i = float(v[ii])
             rows[q].append((i, t))
             if i >= 100.0 - EPS and v[ia] == v[ql] == v[tl]:
@@ -180,8 +179,7 @@ def main():
     keep = set(group)
     hits = {}
     for m in MARKERS:
-        hits[m], _ = load_hits(os.path.join(a.search, f'{m}.hits.tsv.gz'), keep, max(DEEP, a.depth or 0),
-                                      drop)
+        hits[m], _ = load_hits(os.path.join(a.search, f'{m}.hits.tsv.gz'), keep, max(DEEP, a.depth or 0))
         say(f'{m}: hit lists for {len(hits[m])} queries')
     with_hits = {r for r in keep if all(r in hits[m] for m in MARKERS)}
     if len(with_hits) < len(keep):
@@ -228,13 +226,14 @@ def main():
 
         # ---- the folds as (kind, unit, query reads, held-out set)
         folds = []
+        # held-out sets include the dropped reads (--drop-reads), which every fold leaves out of the reference
         for s in use_sp:
-            folds.append(('species', s, [r for r in q_sp if sp[r] == s], reads_of_sp[s]))
+            folds.append(('species', s, [r for r in q_sp if sp[r] == s], reads_of_sp[s] | drop))
         for g in use_ge:
-            folds.append(('genus', g, [r for r in q_ge if ge[r] == g], reads_of_ge[g]))
+            folds.append(('genus', g, [r for r in q_ge if ge[r] == g], reads_of_ge[g] | drop))
         for k in range(5):
             qs = [r for r in q_sp if fold_of[r] == k]
-            held = set(qs)
+            held = set(qs) | drop
             if a.split == 'assembly':
                 for r in qs:
                     held |= copies[DUP.sub('', r)]
@@ -274,7 +273,7 @@ def main():
         for rank in base:
             for m in MARKERS:
                 for r in pool[rank]:
-                    base[rank][m][r] = thr_value(m, r, rank, set())
+                    base[rank][m][r] = thr_value(m, r, rank, drop)
 
         def thresholds(rank, held, kind):
             out = {}

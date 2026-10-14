@@ -1,5 +1,7 @@
 # rdnalink
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23374303.svg)](https://doi.org/10.5281/zenodo.23374303)
+
 Does linking the SSU, ITS and LSU of one long rDNA read give better species calls than the ITS alone?
 This repository holds a pre-registered test of that question (Phase 0) on the EUKARYOME v2.1 long-read set:
 the protocol, its dated amendments, the code and the fixed inputs. Phase 0 comes before any tool is built: if
@@ -118,7 +120,15 @@ To check the locks, put the EUKARYOME file in `ref/eukaryome_v2.1/` and run
    exhaustive version of note 2 is committed with the full run's manifest when the run ends.
 3. `make_folds.py` and `make_spikeins.py` fix the folds and the K1 spike-ins.
 4. `score_k2.py` scores B1 and L, and adds B2 from `run_sintax.py`; `score_k1.py` scores the flags and draws
-   the precision sample; `check_flag_trees.py` checks it on trees.
+   the precision sample; `check_flag_trees.py` checks it on trees. Each takes `--drop-reads` for the original
+   protocol (Amendment 1: the barrnap-cut reads leave queries and reference; they are skipped in the hit lists,
+   as a fold's held-out reads are, so ranks never move up).
+5. `make_report.py` writes the two-page report of section 11 (`report/phase0_report.pdf`, with a text copy and
+   `numbers.tsv`, every number with the file it came from).
+
+`bash scripts/run_scoring.sh check` checks the tools, every lock, the search outputs against their manifest and
+the queries the folds were built from, and writes the drop list; `bash scripts/run_scoring.sh all [JOBS]` then
+runs steps 4 and 5, original protocol first, and can be restarted where it stopped.
 
 Tool versions, parameters and input and output hashes are written to a `manifest.txt` beside every output.
 
@@ -147,7 +157,7 @@ Tool versions, parameters and input and output hashes are written to a `manifest
 
 ## Licence
 
-Code: MIT (`LICENSE`). Protocols, tables and other outputs: CC BY 4.0 (`DATA_LICENSE.md`). EUKARYOME-derived
+To cite: `CITATION.cff`, or the Zenodo record above. Code: MIT (`LICENSE`). Protocols, tables and other outputs: CC BY 4.0 (`DATA_LICENSE.md`). EUKARYOME-derived
 reads keep EUKARYOME's CC BY 4.0 terms; cite Tedersoo et al. (2024) when using them.
 
 Aaron O'Brien
