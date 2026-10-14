@@ -5,7 +5,41 @@ This repository holds a pre-registered test of that question (Phase 0) on the EU
 the protocol, its dated amendments, the code and the fixed inputs. Phase 0 comes before any tool is built: if
 K2 fails, the tool narrows to curation (K1), and if both fail, it is not built.
 
-**Status (October 2026):** protocol locked; full search running; nothing scored yet.
+**Status (October 2026):** protocol locked; full search running; nothing scored yet. A prototype package that
+runs the same method on any long reads is in `src/rdnalink`.
+
+## The package (prototype)
+
+`src/rdnalink` turns the test's method into a tool that runs on any set of long reads spanning SSU, ITS and LSU.
+It does not touch the test: the protocol, folds and scoring scripts stay as locked, and the package's defaults
+follow them.
+
+```
+conda env create -f environment.yml && conda activate rdnalink && pip install -e .
+rdnalink windows reads.fasta -o reads --hmm path/to/itsxrust/data/hmm/F.hmm -t 8
+rdnalink windows reference.fasta -o ref --hmm path/to/itsxrust/data/hmm/F.hmm -t 8
+rdnalink search -q reads -r ref -o hits -t 8
+rdnalink report -q reads -r ref --hits hits -o report.tsv
+```
+
+- `windows` cuts the windows as Amendment 1 does: ITSxRust where it finds the full ITS, barrnap with the join and
+  18S-end rules for the rest, in chunks of 4,000 reads.
+- `search` runs one exhaustive MMseqs2 search per window, as note 2 describes. On a machine with less than about
+  10 GB of RAM, add `--kmer 13`.
+- `report` writes one row per read. For each marker it gives the best identity, the unique best species and genus,
+  and the genus's lead. It then gives the linked species and genus (all three markers agree), the ITS-only
+  species, a conflict flag (two markers confidently name different genera), a label conflict (all three
+  confidently name a genus other than the read's label), and a paralog flag for the short-5.8S type of
+  *Rhizophagus*.
+
+Identity thresholds are off by default (`--min-identity`). The test will say which ones to use.
+
+Checked so far: on the 903 culture copies of the AMF benchmark, `windows` cut every copy, and its ITS windows are
+identical to the benchmark's full ITS. `report` flagged exactly the 41 short-5.8S copies of *Rhizophagus*. In 20
+synthetic chimeras (SSU and ITS of one genus, LSU of another), `report` flagged all 20 as conflicts. These are
+functional checks, not the test.
+
+`pytest tests` runs the unit tests.
 
 ## Questions
 
@@ -57,6 +91,7 @@ To check the locks, put the EUKARYOME file in `ref/eukaryome_v2.1/` and run
 | `search/queries.tsv` | The query reads, their group and window lengths |
 | `folds/`, `spikeins/` | Leave-out units, known-kept split and K1 spike-ins, fixed by note 2 |
 | `scripts/` | Window cut, search, folds, spike-ins and scoring |
+| `src/rdnalink/`, `tests/`, `pyproject.toml`, `environment.yml` | The package (prototype) |
 
 ## Pipeline
 

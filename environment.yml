@@ -1,0 +1,13 @@
+# rdnalink package (prototype). Tool versions as in the test (Amendment 1, note 2).
+name: rdnalink
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - itsxrust=0.3.0
+  - hmmer=3.4
+  - barrnap=1.10.6      # bioconda build of barrnap 1.10.5; brings its own dependencies
+  - mmseqs2=18.8cc5c
+  - pytest
+  - pip

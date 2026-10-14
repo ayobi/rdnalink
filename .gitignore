@@ -5,3 +5,5 @@ __pycache__/
 *.gff
 windows/chunks/
 protocol.zip
+*.egg-info/
+.pytest_cache/

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rdnalink"
+dynamic = ["version"]
+description = "Species calls and checks from the SSU, ITS and LSU of one long rDNA read (prototype)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Aaron O'Brien" }]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+rdnalink = "rdnalink.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "rdnalink.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
