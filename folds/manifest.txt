@@ -1,0 +1,14 @@
+date	2026-10-14T11:53:31
+script	make_folds.py	1f96c4db50264a35a7c21d651a0f814d0dce9ae58eac27e36cdf562b8fc1fc6a
+seed	20261007
+input	search/queries.tsv	26d0f1fd5d6ed653d53ff5b77e3b9eb831ad94b4a80088fe8859a58de888f42e
+input	windows/win.ssu.fasta	3ca7ef5c9d2d577c0ee9574f892094ec5c4ada307260290633a7e832e8785472
+input	windows/win.full.fasta	1ad07a26af5e803b95ca506f8cb6552e6aa8426bd938621d3f97caad72004c30
+input	windows/win.lsu.fasta	21f422e07cfc2bbf6e259eb64e85e5d4a39d9e7dbf164f25a725fe89dc17c673
+output	folds/units.tsv	b1eb957e382e92634be3dc9c846791f6c57aab0fd9b4901783c31007335d9e3d
+output	folds/known_kept.tsv	251bb1f806ec900d11362b6dd21ab24dbe003a994a93bb7a1293843f4142bc72
+group	query_reads	usable_species	usable_genera	known_kept_reads	units_original	units_assembly
+Glomeromycota	5546	27	41	309	309	309
+Agaricales	9436	296	187	1281	1263	1189
+Hypocreales	3318	112	112	514	497	471
+Rhabditida	2901	34	64	199	198	196

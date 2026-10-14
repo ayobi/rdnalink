@@ -1,0 +1,7 @@
+aa3bab443b94e74e643a161f3f693a3073a2b890311fef93f37757c4b88e8191  protocol/NOTE2_search.md
+0312f8e48950e197bc56c90762253ac94afb2213e88e056bcf9bd0896ab5dd0d  scripts/make_spikeins.py
+1f597d2636d993d46a747260a88a06d5bd55a31ecfe74d42de6718275ff964b4  spikeins/spikeins.tsv
+1f96c4db50264a35a7c21d651a0f814d0dce9ae58eac27e36cdf562b8fc1fc6a  scripts/make_folds.py
+b1eb957e382e92634be3dc9c846791f6c57aab0fd9b4901783c31007335d9e3d  folds/units.tsv
+251bb1f806ec900d11362b6dd21ab24dbe003a994a93bb7a1293843f4142bc72  folds/known_kept.tsv
+# locked 2026-10-14 11:54 (America/Santiago), before any fold was scored

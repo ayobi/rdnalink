@@ -1,0 +1,10 @@
+date	2026-10-14T11:53:18
+script	make_spikeins.py	0312f8e48950e197bc56c90762253ac94afb2213e88e056bcf9bd0896ab5dd0d
+seed	20261007
+input	search/queries.tsv	26d0f1fd5d6ed653d53ff5b77e3b9eb831ad94b4a80088fe8859a58de888f42e
+output	spikeins/spikeins.tsv	1f597d2636d993d46a747260a88a06d5bd55a31ecfe74d42de6718275ff964b4
+group	query_reads_named_genus_and_order	eligible_chimera_x	eligible_swap_x
+Glomeromycota	5009	5009	5009
+Agaricales	8156	8156	8156
+Hypocreales	2665	2665	2665
+Rhabditida	1848	1848	1848
