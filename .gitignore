@@ -1,2 +1,7 @@
 ref/
 __pycache__/
+.DS_Store
+*.fasta
+*.gff
+windows/chunks/
+protocol.zip
