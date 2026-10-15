@@ -1,0 +1,2 @@
+K2 (section 8, per-read rates, species level): PASS
+  R >= 0.25 in 2 of 3 non-AMF groups; Glomeromycota FK(L) <= best baseline: True

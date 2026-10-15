@@ -1,0 +1,145 @@
+group	rank	method	average	known_kept_target	known_kept_reached	false_known_pct	note
+Glomeromycota	species	B1	read	80.000	62.460	6.149	80% not reached
+Glomeromycota	species	B1	read	90.000	62.460	6.149	90% not reached
+Glomeromycota	species	B1	read	95.000	62.460	6.149	95% not reached
+Glomeromycota	species	B1	macro	80.000	63.101	5.872	80% not reached
+Glomeromycota	species	B1	macro	90.000	63.101	5.872	90% not reached
+Glomeromycota	species	B1	macro	95.000	63.101	5.872	95% not reached
+Glomeromycota	species	B2	read	80.000	64.401	4.531	80% not reached
+Glomeromycota	species	B2	read	90.000	64.401	4.531	90% not reached
+Glomeromycota	species	B2	read	95.000	64.401	4.531	95% not reached
+Glomeromycota	species	B2	macro	80.000	66.907	5.663	80% not reached
+Glomeromycota	species	B2	macro	90.000	66.907	5.663	90% not reached
+Glomeromycota	species	B2	macro	95.000	66.907	5.663	95% not reached
+Glomeromycota	species	L	read	80.000	0.000	0.000	80% not reached
+Glomeromycota	species	L	read	90.000	0.000	0.000	90% not reached
+Glomeromycota	species	L	read	95.000	0.000	0.000	95% not reached
+Glomeromycota	species	L	macro	80.000	0.000	0.000	80% not reached
+Glomeromycota	species	L	macro	90.000	0.000	0.000	90% not reached
+Glomeromycota	species	L	macro	95.000	0.000	0.000	95% not reached
+Glomeromycota	genus	B1	read	80.000	80.000	0.128	
+Glomeromycota	genus	B1	read	90.000	90.000	0.400	
+Glomeromycota	genus	B1	read	95.000	95.000	0.491	
+Glomeromycota	genus	B1	macro	80.000	80.000	0.772	
+Glomeromycota	genus	B1	macro	90.000	90.000	2.175	
+Glomeromycota	genus	B1	macro	95.000	95.000	3.499	
+Glomeromycota	genus	B2	read	80.000	94.822	1.399	lowest known-kept 94.8% is above target
+Glomeromycota	genus	B2	read	90.000	94.822	1.399	lowest known-kept 94.8% is above target
+Glomeromycota	genus	B2	read	95.000	95.000	3.289	
+Glomeromycota	genus	B2	macro	80.000	90.324	3.644	lowest known-kept 90.3% is above target
+Glomeromycota	genus	B2	macro	90.000	90.324	3.644	lowest known-kept 90.3% is above target
+Glomeromycota	genus	B2	macro	95.000	95.000	12.518	
+Glomeromycota	genus	L	read	80.000	1.294	0.040	80% not reached
+Glomeromycota	genus	L	read	90.000	1.294	0.040	90% not reached
+Glomeromycota	genus	L	read	95.000	1.294	0.040	95% not reached
+Glomeromycota	genus	L	macro	80.000	0.462	0.038	80% not reached
+Glomeromycota	genus	L	macro	90.000	0.462	0.038	90% not reached
+Glomeromycota	genus	L	macro	95.000	0.462	0.038	95% not reached
+Agaricales	species	B1	read	80.000	73.224	35.675	80% not reached
+Agaricales	species	B1	read	90.000	73.224	35.675	90% not reached
+Agaricales	species	B1	read	95.000	73.224	35.675	95% not reached
+Agaricales	species	B1	macro	80.000	74.227	37.549	80% not reached
+Agaricales	species	B1	macro	90.000	74.227	37.549	90% not reached
+Agaricales	species	B1	macro	95.000	74.227	37.549	95% not reached
+Agaricales	species	B2	read	80.000	80.000	33.052	
+Agaricales	species	B2	read	90.000	80.250	34.192	90% not reached
+Agaricales	species	B2	read	95.000	80.250	34.192	95% not reached
+Agaricales	species	B2	macro	80.000	80.000	34.065	
+Agaricales	species	B2	macro	90.000	80.672	36.365	90% not reached
+Agaricales	species	B2	macro	95.000	80.672	36.365	95% not reached
+Agaricales	species	L	read	80.000	0.000	0.000	80% not reached
+Agaricales	species	L	read	90.000	0.000	0.000	90% not reached
+Agaricales	species	L	read	95.000	0.000	0.000	95% not reached
+Agaricales	species	L	macro	80.000	0.000	0.000	80% not reached
+Agaricales	species	L	macro	90.000	0.000	0.000	90% not reached
+Agaricales	species	L	macro	95.000	0.000	0.000	95% not reached
+Agaricales	genus	B1	read	80.000	90.945	2.464	lowest known-kept 90.9% is above target
+Agaricales	genus	B1	read	90.000	90.945	2.464	lowest known-kept 90.9% is above target
+Agaricales	genus	B1	read	95.000	95.000	6.141	
+Agaricales	genus	B1	macro	80.000	91.182	3.568	lowest known-kept 91.2% is above target
+Agaricales	genus	B1	macro	90.000	91.182	3.568	lowest known-kept 91.2% is above target
+Agaricales	genus	B1	macro	95.000	95.000	7.483	
+Agaricales	genus	B2	read	80.000	90.242	5.724	lowest known-kept 90.2% is above target
+Agaricales	genus	B2	read	90.000	90.242	5.724	lowest known-kept 90.2% is above target
+Agaricales	genus	B2	read	95.000	95.000	12.772	
+Agaricales	genus	B2	macro	80.000	90.355	7.603	lowest known-kept 90.4% is above target
+Agaricales	genus	B2	macro	90.000	90.355	7.603	lowest known-kept 90.4% is above target
+Agaricales	genus	B2	macro	95.000	95.000	16.282	
+Agaricales	genus	L	read	80.000	0.234	0.012	80% not reached
+Agaricales	genus	L	read	90.000	0.234	0.012	90% not reached
+Agaricales	genus	L	read	95.000	0.234	0.012	95% not reached
+Agaricales	genus	L	macro	80.000	0.267	0.024	80% not reached
+Agaricales	genus	L	macro	90.000	0.267	0.024	90% not reached
+Agaricales	genus	L	macro	95.000	0.267	0.024	95% not reached
+Hypocreales	species	B1	read	80.000	50.584	34.047	80% not reached
+Hypocreales	species	B1	read	90.000	50.584	34.047	90% not reached
+Hypocreales	species	B1	read	95.000	50.584	34.047	95% not reached
+Hypocreales	species	B1	macro	80.000	51.736	36.126	80% not reached
+Hypocreales	species	B1	macro	90.000	51.736	36.126	90% not reached
+Hypocreales	species	B1	macro	95.000	51.736	36.126	95% not reached
+Hypocreales	species	B2	read	80.000	52.918	30.545	80% not reached
+Hypocreales	species	B2	read	90.000	52.918	30.545	90% not reached
+Hypocreales	species	B2	read	95.000	52.918	30.545	95% not reached
+Hypocreales	species	B2	macro	80.000	55.205	30.884	80% not reached
+Hypocreales	species	B2	macro	90.000	55.205	30.884	90% not reached
+Hypocreales	species	B2	macro	95.000	55.205	30.884	95% not reached
+Hypocreales	species	L	read	80.000	1.946	0.000	80% not reached
+Hypocreales	species	L	read	90.000	1.946	0.000	90% not reached
+Hypocreales	species	L	read	95.000	1.946	0.000	95% not reached
+Hypocreales	species	L	macro	80.000	1.890	0.000	80% not reached
+Hypocreales	species	L	macro	90.000	1.890	0.000	90% not reached
+Hypocreales	species	L	macro	95.000	1.890	0.000	95% not reached
+Hypocreales	genus	B1	read	80.000	80.000	8.994	
+Hypocreales	genus	B1	read	90.000	85.798	82.990	90% not reached
+Hypocreales	genus	B1	read	95.000	85.798	82.990	95% not reached
+Hypocreales	genus	B1	macro	80.000	80.000	7.240	
+Hypocreales	genus	B1	macro	90.000	86.001	77.996	90% not reached
+Hypocreales	genus	B1	macro	95.000	86.001	77.996	95% not reached
+Hypocreales	genus	B2	read	80.000	80.000	26.744	
+Hypocreales	genus	B2	read	90.000	90.000	43.645	
+Hypocreales	genus	B2	read	95.000	91.245	51.068	95% not reached
+Hypocreales	genus	B2	macro	80.000	80.000	25.112	
+Hypocreales	genus	B2	macro	90.000	90.000	47.581	
+Hypocreales	genus	B2	macro	95.000	91.954	58.206	95% not reached
+Hypocreales	genus	L	read	80.000	5.253	1.437	80% not reached
+Hypocreales	genus	L	read	90.000	5.253	1.437	90% not reached
+Hypocreales	genus	L	read	95.000	5.253	1.437	95% not reached
+Hypocreales	genus	L	macro	80.000	5.850	1.698	80% not reached
+Hypocreales	genus	L	macro	90.000	5.850	1.698	90% not reached
+Hypocreales	genus	L	macro	95.000	5.850	1.698	95% not reached
+Rhabditida	species	B1	read	80.000	80.000	9.899	
+Rhabditida	species	B1	read	90.000	82.915	26.633	90% not reached
+Rhabditida	species	B1	read	95.000	82.915	26.633	95% not reached
+Rhabditida	species	B1	macro	80.000	80.000	2.397	
+Rhabditida	species	B1	macro	90.000	86.828	20.833	90% not reached
+Rhabditida	species	B1	macro	95.000	86.828	20.833	95% not reached
+Rhabditida	species	B2	read	80.000	80.000	17.688	
+Rhabditida	species	B2	read	90.000	86.935	25.126	90% not reached
+Rhabditida	species	B2	read	95.000	86.935	25.126	95% not reached
+Rhabditida	species	B2	macro	80.000	80.000	14.594	
+Rhabditida	species	B2	macro	90.000	88.774	20.104	90% not reached
+Rhabditida	species	B2	macro	95.000	88.774	20.104	95% not reached
+Rhabditida	species	L	read	80.000	39.698	7.035	80% not reached
+Rhabditida	species	L	read	90.000	39.698	7.035	90% not reached
+Rhabditida	species	L	read	95.000	39.698	7.035	95% not reached
+Rhabditida	species	L	macro	80.000	45.084	10.812	80% not reached
+Rhabditida	species	L	macro	90.000	45.084	10.812	90% not reached
+Rhabditida	species	L	macro	95.000	45.084	10.812	95% not reached
+Rhabditida	genus	B1	read	80.000	80.000	0.695	
+Rhabditida	genus	B1	read	90.000	90.000	6.465	
+Rhabditida	genus	B1	read	95.000	95.000	7.182	
+Rhabditida	genus	B1	macro	80.000	84.249	0.324	lowest known-kept 84.2% is above target
+Rhabditida	genus	B1	macro	90.000	90.000	0.933	
+Rhabditida	genus	B1	macro	95.000	95.000	4.161	
+Rhabditida	genus	B2	read	80.000	94.472	10.252	lowest known-kept 94.5% is above target
+Rhabditida	genus	B2	read	90.000	94.472	10.252	lowest known-kept 94.5% is above target
+Rhabditida	genus	B2	read	95.000	95.000	10.899	
+Rhabditida	genus	B2	macro	80.000	96.707	6.851	lowest known-kept 96.7% is above target
+Rhabditida	genus	B2	macro	90.000	96.707	6.851	lowest known-kept 96.7% is above target
+Rhabditida	genus	B2	macro	95.000	96.707	6.851	lowest known-kept 96.7% is above target
+Rhabditida	genus	L	read	80.000	80.000	7.653	
+Rhabditida	genus	L	read	90.000	84.422	13.333	90% not reached
+Rhabditida	genus	L	read	95.000	84.422	13.333	95% not reached
+Rhabditida	genus	L	macro	80.000	80.000	5.704	
+Rhabditida	genus	L	macro	90.000	83.400	12.398	90% not reached
+Rhabditida	genus	L	macro	95.000	83.400	12.398	95% not reached

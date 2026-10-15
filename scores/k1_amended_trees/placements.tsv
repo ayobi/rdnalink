@@ -1,0 +1,151 @@
+flag	group	read	label_genus	marker	placed_genus	clade_size
+F1	Hypocreales	AFQZ01001817_dup1	Aciculosporium	ssu		13
+F1	Hypocreales	AFQZ01001817_dup1	Aciculosporium	its	Aciculosporium	2
+F1	Hypocreales	AFQZ01001817_dup1	Aciculosporium	lsu	Aciculosporium	2
+F1	Agaricales	EUK1104207		ssu	Cyphellophora	2
+F1	Agaricales	EUK1104207		its		7
+F1	Agaricales	EUK1104207		lsu		9
+F1	Agaricales	EUK1122320_dup1	Mycenella	ssu		16
+F1	Agaricales	EUK1122320_dup1	Mycenella	its	Mycenella	2
+F1	Agaricales	EUK1122320_dup1	Mycenella	lsu	Mycenella	2
+F1	Agaricales	EUK1122397	Cortinarius	ssu	Cortinarius	2
+F1	Agaricales	EUK1122397	Cortinarius	its	Cortinarius	2
+F1	Agaricales	EUK1122397	Cortinarius	lsu	Cortinarius	2
+F1	Agaricales	EUK1122908	Pholiota	ssu	Cyphellophora	2
+F1	Agaricales	EUK1122908	Pholiota	its	Pholiota	3
+F1	Agaricales	EUK1122908	Pholiota	lsu		9
+F1	Agaricales	EUK1149462	Bolbitius	ssu		9
+F1	Agaricales	EUK1149462	Bolbitius	its	Bolbitius	7
+F1	Agaricales	EUK1149462	Bolbitius	lsu		11
+F1	Agaricales	EUK1150233	Cortinarius	ssu	Cyphellophora	2
+F1	Agaricales	EUK1150233	Cortinarius	its		15
+F1	Agaricales	EUK1150233	Cortinarius	lsu		17
+F1	Hypocreales	EUK1178465		ssu		9
+F1	Hypocreales	EUK1178465		its		12
+F1	Hypocreales	EUK1178465		lsu		2
+F1	Hypocreales	EUK1178985	Beauveria	ssu	Parengyodontium	2
+F1	Hypocreales	EUK1178985	Beauveria	its	Beauveria	13
+F1	Hypocreales	EUK1178985	Beauveria	lsu	Beauveria	13
+F1	Hypocreales	EUK1179033	Trichoderma	ssu		16
+F1	Hypocreales	EUK1179033	Trichoderma	its	Trichoderma	6
+F1	Hypocreales	EUK1179033	Trichoderma	lsu	Trichoderma	6
+F1	Hypocreales	EUK1179329	Rugonectria	ssu		2
+F1	Hypocreales	EUK1179329	Rugonectria	its	Rugonectria	2
+F1	Hypocreales	EUK1179329	Rugonectria	lsu	Rugonectria	2
+F1	Hypocreales	EUK1179359		ssu		3
+F1	Hypocreales	EUK1179359		its	Sarocladium	2
+F1	Hypocreales	EUK1179359		lsu		10
+F1	Agaricales	EUK1180309		ssu	Cyphellophora	2
+F1	Agaricales	EUK1180309		its		5
+F1	Agaricales	EUK1180309		lsu		15
+F1	Agaricales	EUK1180577	Mycenella	ssu		0
+F1	Agaricales	EUK1180577	Mycenella	its	Mycenella	9
+F1	Agaricales	EUK1180577	Mycenella	lsu		15
+F1	Agaricales	EUK1180819	Clavaria	ssu		2
+F1	Agaricales	EUK1180819	Clavaria	its	Clavaria	2
+F1	Agaricales	EUK1180819	Clavaria	lsu	Clavaria	2
+F1	Agaricales	EUK1180953	Ramariopsis	ssu		11
+F1	Agaricales	EUK1180953	Ramariopsis	its	Ramariopsis	14
+F1	Agaricales	EUK1180953	Ramariopsis	lsu	Ramariopsis	3
+F1	Agaricales	EUK1181231		ssu		0
+F1	Agaricales	EUK1181231		its		7
+F1	Agaricales	EUK1181231		lsu	Amanita	2
+F1	Agaricales	EUK1181251	Cyphellopsis	ssu	Cyphellophora	2
+F1	Agaricales	EUK1181251	Cyphellopsis	its		9
+F1	Agaricales	EUK1181251	Cyphellopsis	lsu		6
+F1	Agaricales	EUK1181549	Hygrocybe	ssu	Hygrocybe	2
+F1	Agaricales	EUK1181549	Hygrocybe	its	Hygrocybe	2
+F1	Agaricales	EUK1181549	Hygrocybe	lsu	Hygrocybe	2
+F1	Agaricales	EUK1181563	Hygrocybe	ssu	Cyphellophora	2
+F1	Agaricales	EUK1181563	Hygrocybe	its	Hygrocybe	3
+F1	Agaricales	EUK1181563	Hygrocybe	lsu	Hygrocybe	2
+F1	Agaricales	EUK1181658	Inocybe	ssu	Cyphellophora	2
+F1	Agaricales	EUK1181658	Inocybe	its		10
+F1	Agaricales	EUK1181658	Inocybe	lsu	Inocybe	2
+F1	Agaricales	EUK1182039	Mycena	ssu		18
+F1	Agaricales	EUK1182039	Mycena	its	Mycena	2
+F1	Agaricales	EUK1182039	Mycena	lsu		12
+F1	Agaricales	EUK1182105	Flagelloscypha	ssu	Cyphellophora	2
+F1	Agaricales	EUK1182105	Flagelloscypha	its		8
+F1	Agaricales	EUK1182105	Flagelloscypha	lsu	Flagelloscypha	3
+F1	Agaricales	EUK1182206	Volvopluteus	ssu		9
+F1	Agaricales	EUK1182206	Volvopluteus	its	Volvopluteus	4
+F1	Agaricales	EUK1182206	Volvopluteus	lsu	Volvopluteus	4
+F1	Glomeromycota	EUK1187800	Acaulospora	ssu	Acaulospora	12
+F1	Glomeromycota	EUK1187800	Acaulospora	its	Acaulospora	3
+F1	Glomeromycota	EUK1187800	Acaulospora	lsu	Acaulospora	3
+F1	Agaricales	EUK1230808	Entoloma	ssu		19
+F1	Agaricales	EUK1230808	Entoloma	its	Entoloma	8
+F1	Agaricales	EUK1230808	Entoloma	lsu		15
+F1	Agaricales	EUK1259542		ssu	Platyreta	2
+F1	Agaricales	EUK1259542		its		2
+F1	Agaricales	EUK1259542		lsu		2
+F1	Agaricales	EUK1260101	Cortinarius	ssu	Cyphellophora	2
+F1	Agaricales	EUK1260101	Cortinarius	its	Cortinarius	2
+F1	Agaricales	EUK1260101	Cortinarius	lsu	Cortinarius	12
+F1	Agaricales	EUK1260168	Cunninghammyces	ssu	Athelia	2
+F1	Agaricales	EUK1260168	Cunninghammyces	its		5
+F1	Agaricales	EUK1260168	Cunninghammyces	lsu		18
+F1	Agaricales	EUK1260551	Inocybe	ssu	Cyphellophora	2
+F1	Agaricales	EUK1260551	Inocybe	its	Inocybe	6
+F1	Agaricales	EUK1260551	Inocybe	lsu		17
+F1	Agaricales	EUK1260784	Mycena	ssu		0
+F1	Agaricales	EUK1260784	Mycena	its		6
+F1	Agaricales	EUK1260784	Mycena	lsu	Mycena	7
+F1	Agaricales	EUK1260829		ssu	Cyphellophora	2
+F1	Agaricales	EUK1260829		its	Flagelloscypha	10
+F1	Agaricales	EUK1260829		lsu		9
+F1	Agaricales	EUK1357411	Hygrocybe	ssu	Cyphellophora	2
+F1	Agaricales	EUK1357411	Hygrocybe	its	Hygrocybe	6
+F1	Agaricales	EUK1357411	Hygrocybe	lsu		10
+F1	Hypocreales	EUK1636579	Aschersonia	ssu	Parengyodontium	2
+F1	Hypocreales	EUK1636579	Aschersonia	its	Aschersonia	2
+F1	Hypocreales	EUK1636579	Aschersonia	lsu	Aschersonia	2
+F1	Hypocreales	EUK1803406	Beauveria	ssu		14
+F1	Hypocreales	EUK1803406	Beauveria	its	Beauveria	4
+F1	Hypocreales	EUK1803406	Beauveria	lsu	Purpureocillium	4
+F1	Agaricales	EUK1803932	Mycena	ssu	Cyphellophora	2
+F1	Agaricales	EUK1803932	Mycena	its	Mycena	2
+F1	Agaricales	EUK1803932	Mycena	lsu		18
+F1	Hypocreales	EUK1821844		ssu	Sarocladium	2
+F1	Hypocreales	EUK1821844		its		8
+F1	Hypocreales	EUK1821844		lsu		11
+F1	Hypocreales	EUK1821856	Acremonium	ssu		18
+F1	Hypocreales	EUK1821856	Acremonium	its	Collarina	5
+F1	Hypocreales	EUK1821856	Acremonium	lsu	Collarina	8
+F1	Hypocreales	EUK1822149	Gibberella	ssu		12
+F1	Hypocreales	EUK1822149	Gibberella	its		4
+F1	Hypocreales	EUK1822149	Gibberella	lsu		0
+F1	Agaricales	EUK1823027		ssu		0
+F1	Agaricales	EUK1823027		its		5
+F1	Agaricales	EUK1823027		lsu		11
+F1	Hypocreales	EUK1882094	Nectriella	ssu	Sarocladium	2
+F1	Hypocreales	EUK1882094	Nectriella	its		12
+F1	Hypocreales	EUK1882094	Nectriella	lsu		10
+F1	Hypocreales	EUK1884332	Hirsutella	ssu	Parengyodontium	2
+F1	Hypocreales	EUK1884332	Hirsutella	its	Hirsutella	4
+F1	Hypocreales	EUK1884332	Hirsutella	lsu	Hirsutella	4
+F1	Agaricales	EUK1885274	Hygrocybe	ssu		0
+F1	Agaricales	EUK1885274	Hygrocybe	its	Hygrocybe	2
+F1	Agaricales	EUK1885274	Hygrocybe	lsu		8
+F1	Agaricales	EUK1889614	Conocybe	ssu	Cyphellophora	2
+F1	Agaricales	EUK1889614	Conocybe	its	Conocybe	2
+F1	Agaricales	EUK1889614	Conocybe	lsu		18
+F1	Agaricales	EUK1889663	Entoloma	ssu		8
+F1	Agaricales	EUK1889663	Entoloma	its	Entoloma	4
+F1	Agaricales	EUK1889663	Entoloma	lsu	Entoloma	3
+F1	Agaricales	EUK1896805	Arrhenia	ssu	Cyphellophora	2
+F1	Agaricales	EUK1896805	Arrhenia	its	Arrhenia	4
+F1	Agaricales	EUK1896805	Arrhenia	lsu	Arrhenia	3
+F1	Hypocreales	EUK1898204	Rugonectria	ssu		12
+F1	Hypocreales	EUK1898204	Rugonectria	its	Rugonectria	2
+F1	Hypocreales	EUK1898204	Rugonectria	lsu	Rugonectria	2
+F1	Hypocreales	EUK1898206	Verruciconidia	ssu	Parengyodontium	2
+F1	Hypocreales	EUK1898206	Verruciconidia	its	Verruciconidia	2
+F1	Hypocreales	EUK1898206	Verruciconidia	lsu	Acremonium	9
+F1	Hypocreales	GCA_001618945	Drechmeria	ssu	Drechmeria	3
+F1	Hypocreales	GCA_001618945	Drechmeria	its	Drechmeria	3
+F1	Hypocreales	GCA_001618945	Drechmeria	lsu	Drechmeria	2
+F1	Agaricales	GCA_003987915	Mycena	ssu		0
+F1	Agaricales	GCA_003987915	Mycena	its		6
+F1	Agaricales	GCA_003987915	Mycena	lsu		2

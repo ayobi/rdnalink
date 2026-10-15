@@ -186,6 +186,28 @@ def table(rows, widths):
     return '\n'.join(out)
 
 
+def kk_ranges(sweep):
+    """group -> method -> (lowest, highest) known kept, species level, per read, over the sweep."""
+    out = {}
+    for g in GROUPS:
+        out[g] = {}
+        for code, *_ in METHODS:
+            xs = [num(x['kk_read_pct']) for x in sweep or [] if x['group'] == g and x['rank'] == 'species'
+                  and x['method'] == code]
+            xs = [v for v in xs if v is not None]
+            if xs:
+                out[g][code] = (min(xs), max(xs))
+    return out
+
+
+def shared_level(r):
+    """The known-kept interval every method reaches, or None."""
+    if len(r) < 2 or 'L' not in r:
+        return None
+    lo, hi = max(v[0] for v in r.values()), min(v[1] for v in r.values())
+    return (lo, hi) if lo <= hi + 1e-9 else None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--scores', default='scores')
@@ -234,6 +256,14 @@ def main():
 
     level = {g: num(main_k2['rows'].get((g, 'read'), {}).get('known_kept_level')) or 90.0 for g in GROUPS}
     sweep = tsv(S('k2_protocol', 'sweep.tsv'))
+    ranges = {run: kk_ranges(tsv(S(run, 'sweep.tsv'))) for run, _ in K2_RUNS}
+    unmatched = {run: [g for g in GROUPS if r[g] and shared_level(r[g]) is None] for run, r in ranges.items()}
+    for run, r in ranges.items():
+        for g in GROUPS:
+            for code, (lo, hi) in r[g].items():
+                N.add(f'{run}.{g}.species.{code}.known_kept_range', f'{lo:.2f}-{hi:.2f}', f'{run}/sweep.tsv')
+            N.add(f'{run}.{g}.species.shared_known_kept', 'none' if shared_level(r[g]) is None else
+                  '%.2f-%.2f' % shared_level(r[g]), f'{run}/sweep.tsv')
 
     # ---- K1
     k1 = OrderedDict()
@@ -334,13 +364,67 @@ def main():
              'BLASTn check for its (meta)genome and (meta)transcriptome data only, so they are not described as '
              'chimeras its checks missed (note 4). Their accessions are in scores/k1_*/flags.tsv.')
 
+    # ---- after scoring (note 7): reading K2, and why K1 misses
+    # K2 can pass only if Glomeromycota and at least two non-AMF groups have a known-kept level all methods reach
+    def can_pass(run):
+        ok = [g for g in GROUPS if g not in unmatched[run]]
+        return 'Glomeromycota' in ok and sum(g in ok for g in NON_AMF) >= 2
+    counts = sorted({len(unmatched[r]) for r, _ in K2_RUNS})
+    verdicts.append('  K2  at matched known-kept rates (note 7): '
+                    + ('not supported' if not any(can_pass(r) for r, _ in K2_RUNS) else 'see page 3')
+                    + f'; no shared level in {"/".join(map(str, counts))} of 4 groups')
+    for run, _ in K2_RUNS:
+        N.add(f'{run}.matched_reading', 'can pass' if can_pass(run) else 'not supported',
+              f'{run}/sweep.tsv (note 7)')
+    rng_rows = [('group', 'L', 'B1', 'B2', 'shared level')]
+    for g in GROUPS:
+        r = ranges['k2_protocol'][g]
+        cell = lambda c: f'{r[c][0]:.1f}-{r[c][1]:.1f}' if c in r else '-'  # noqa: E731
+        sl = shared_level(r)
+        rng_rows.append((g, cell('L'), cell('B1'), cell('B2'), 'none' if sl is None else f'{sl[0]:.1f}-{sl[1]:.1f}'))
+    k2_ranges_text = ('Known-kept range (%) of each method over its sweep, species level, per read, original '
+                      'protocol\n' + table(rng_rows, (14, 12, 12, 12, 13)))
+    why_rows = [('group', 'chim_a', 'chim_b', 'swaps', 'confident: SSU / ITS / LSU')]
+    spk = tsv(S('k1_protocol', 'spikeins_scored.tsv')) or []
+    for g in GROUPS:
+        xs = [x for x in spk if x['group'] == g]
+        def rate(kind):
+            ys = [x for x in xs if x['kind'] == kind]
+            c = sum(int(x['caught']) for x in ys)
+            N.add(f'k1_protocol.{g}.{kind}.caught', f'{c}/{len(ys)}', 'k1_protocol/spikeins_scored.tsv')
+            return f'{c}/{len(ys)}' if ys else '-'
+        conf = ' / '.join(f'{100 * sum(int(x[m + "_confident"]) for x in xs) / len(xs):.0f}%' if xs else '-'
+                          for m in ('ssu', 'its', 'lsu'))
+        why_rows.append((g, rate('chim_a'), rate('chim_b'), rate('swap'), conf))
+    k1_why_text = ('Spike-ins caught, by kind, and share of spike-ins on which each marker names a genus with '
+                   'confidence (original protocol)\n' + table(why_rows, (14, 9, 9, 9, 26)))
+    placed = tsv(S('k1_protocol_trees', 'flags_checked.tsv')) or []
+    two = sum(sum(bool(x[f'{m}_placed']) for m in ('ssu', 'its', 'lsu')) >= 2 for x in placed)
+    after_k2 = ('Section 8 reads false known at 90% known kept, or at the highest known kept all methods reach, so '
+                'that methods are compared at matched known-kept rates (section 6). At species level, the known-kept '
+                'range of L lies wholly below those of B1 and B2 in every group (table): no level is reached by all '
+                'three, so no matched comparison exists. score_k2.py then reads each baseline at its own lowest known '
+                'kept and L at its highest, and k2_decision.txt reports PASS from these unmatched values. Read at '
+                'matched rates, no group meets section 8, and K2 is not supported. L stays this low at every q, so '
+                'its threshold is not the limit: L names a species only when SSU, ITS and LSU each give the same '
+                'unique best species, and the SSU and LSU rarely give the same one as the ITS.')
+    after_k1 = ('K1 misses on recall in every group. A chimera is flagged when two markers name different genera '
+                'with confidence. The SSU does so for few fungal spike-ins, so chimeras that join the SSU of one read '
+                'to the ITS and LSU of another (chim_b) are almost never caught in fungi; in Agaricales and '
+                'Hypocreales the LSU is also rarely confident, which limits chimeras that swap only the LSU (chim_a). '
+                f'Of the {len(placed)} sampled real flags checked on trees, {two} had at least two markers placed in '
+                'a supported clade, the minimum for a flag to be real.')
+    after_head = ('Added after scoring (note 7). These analyses were written once the results were known; they change '
+                  'no number in the pages before, and are read from the same score tables.')
+
     # ---- markdown
     md = [f'# {head.splitlines()[0]}', '', head.splitlines()[1], '']
     if a.banner:
         md += [f'**{a.banner}**', '']
     md += ['## Verdicts', '', '```', '\n'.join(verdicts), '```', '', rules, '', '## K2', '', '```', k2_main, '```',
            '', '```', '\n\n'.join(k2_other), '```', '', '```', k2_macro, '```', '', '## K1', '', '```',
-           '\n\n'.join(k1_text), '```', '', note4, '', '## Checks and exclusions', '', '```', '\n'.join(depth_text),
+           '\n\n'.join(k1_text), '```', '', note4, '', '## After scoring (note 7)', '', after_head, '', after_k2, '',
+           '```', k2_ranges_text, '```', '', after_k1, '', '```', k1_why_text, '```', '', '## Checks and exclusions', '', '```', '\n'.join(depth_text),
            '```', '', ' '.join(excl), '', '```', '\n'.join(doc_text), '```', '',
            'Every number above is in numbers.tsv with the file it came from.']
     with open(os.path.join(a.out, 'phase0_report.md'), 'w') as fh:
@@ -358,8 +442,8 @@ def main():
         if a.banner:
             fig.text(0.93, 0.965, a.banner, fontsize=9, color='#d03b3b', ha='right', va='top', weight='bold')
         fig.text(0.07, 0.915, '\n'.join(verdicts), **{**mono, 'fontsize': 8})
-        fig.text(0.07, 0.835, textwrap.fill(rules, 128), fontsize=7.2, color=INK2, va='top')
-        fig.text(0.07, 0.785, k2_main, **mono)
+        fig.text(0.07, 0.82, textwrap.fill(rules, 128), fontsize=7.2, color=INK2, va='top')
+        fig.text(0.07, 0.768, k2_main, **mono)
         axs = [fig.add_axes([0.07 + i * 0.225, 0.47, 0.19, 0.17]) for i in range(4)]
         curves(axs, sweep, level)
         handles, labels = axs[0].get_legend_handles_labels()
@@ -387,6 +471,20 @@ def main():
         fig.text(0.07, 0.235, '\n'.join(doc_text), **mono)
         fig.text(0.07, 0.04, 'Every number in this report is in numbers.tsv, with the file it came from.',
                  fontsize=7, color=INK2)
+        pdf.savefig(fig)
+        plt.close(fig)
+        # page 3: after scoring
+        fig = plt.figure(figsize=(8.27, 11.69), facecolor='white')
+        if a.banner:
+            fig.text(0.93, 0.965, a.banner, fontsize=9, color='#d03b3b', ha='right', va='top', weight='bold')
+        fig.text(0.07, 0.965, 'After scoring (note 7)', fontsize=10, color=INK, weight='bold', va='top')
+        fig.text(0.07, 0.94, textwrap.fill(after_head, 128), fontsize=7.2, color=INK2, va='top')
+        fig.text(0.07, 0.905, 'Reading K2 at matched known-kept rates', fontsize=8.5, color=INK, weight='bold', va='top')
+        fig.text(0.07, 0.885, textwrap.fill(after_k2, 128), fontsize=7.2, color=INK, va='top')
+        fig.text(0.07, 0.785, k2_ranges_text, **mono)
+        fig.text(0.07, 0.69, 'Why K1 misses', fontsize=8.5, color=INK, weight='bold', va='top')
+        fig.text(0.07, 0.67, textwrap.fill(after_k1, 128), fontsize=7.2, color=INK, va='top')
+        fig.text(0.07, 0.585, k1_why_text, **mono)
         pdf.savefig(fig)
         plt.close(fig)
     print(f'wrote {a.out}/phase0_report.pdf, phase0_report.md and numbers.tsv')

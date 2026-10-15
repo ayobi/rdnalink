@@ -1,0 +1,11 @@
+date	2026-10-15T10:24:08
+script	score_k2.py	b1a69ff3e2cd2632e50abc9d6035e6306be3c42d20f0fda01a7131298c4d3cd1
+input	search/ssu.hits.tsv.gz	0f467dadab947383b285fe55f0f10d27731701118c9acf77450ca66db538a8f5
+input	search/its.hits.tsv.gz	555e61820f326d80bec9cdf87c5dce3f9b647b557c4a4ed5754044fc7c6bb529
+input	search/lsu.hits.tsv.gz	e441f9a7228d8edbf616a9a7290a155b5d50c829149af0b2983c2449057adefb
+input	folds/units.tsv	b1eb957e382e92634be3dc9c846791f6c57aab0fd9b4901783c31007335d9e3d
+input	folds/known_kept.tsv	251bb1f806ec900d11362b6dd21ab24dbe003a994a93bb7a1293843f4142bc72
+split	original
+drop_reads	scores/drop_barrnap.txt	31563
+seed	20261007
+q	0.5..50.0 step 0.5

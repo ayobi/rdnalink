@@ -7,7 +7,7 @@ This repository holds a pre-registered test of that question (Phase 0) on the EU
 the protocol, its dated amendments, the code and the fixed inputs. Phase 0 comes before any tool is built: if
 K2 fails, the tool narrows to curation (K1), and if both fail, it is not built.
 
-**Status (October 2026):** protocol locked; full search running; nothing scored yet. A prototype package that
+**Status (15 October 2026):** scored. K1 fails (chimeras caught 30%, label swaps 14%, real flags confirmed 16%, against 80%, 80% and 50%). K2 is PASS as computed, but not supported: L's known-kept range never meets those of the baselines, so no matched comparison exists (note 7). Report: `report/phase0_report.pdf`. A prototype package that
 runs the same method on any long reads is in `src/rdnalink`.
 
 ## The package (prototype)

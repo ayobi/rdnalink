@@ -1,0 +1,9 @@
+group	average	known_kept_level	fk_B1_pct	fk_B2_pct	fk_L_pct	best_baseline	R
+Glomeromycota	read	0.000	2.265	0.000	0.000	B2	nan
+Glomeromycota	macro	0.000	2.366	0.000	0.000	B2	nan
+Agaricales	read	0.000	3.279	8.353	0.000	B1	1.000
+Agaricales	macro	0.000	3.464	9.381	0.000	B1	1.000
+Hypocreales	read	0.584	13.230	8.171	0.000	B2	1.000
+Hypocreales	macro	0.893	14.793	7.932	0.000	B2	1.000
+Rhabditida	read	39.698	2.513	6.533	5.528	B1	-1.200
+Rhabditida	macro	45.084	1.852	11.275	7.870	B1	-3.250

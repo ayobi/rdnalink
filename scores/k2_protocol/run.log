@@ -1,0 +1,8 @@
+ssu: hit lists for 21019 queries
+its: hit lists for 21019 queries
+lsu: hit lists for 21019 queries
+Glomeromycota: 5544 queries; usable species 27, genera 41; depth check 2721/5620 fold queries fail (48.42%) -> ranks <= 1000
+Agaricales: 9436 queries; usable species 296, genera 187; depth check 628/10598 fold queries fail (5.93%) -> ranks <= 1000
+Hypocreales: 3317 queries; usable species 112, genera 112; depth check 214/3602 fold queries fail (5.94%) -> ranks <= 1000
+Rhabditida: 2722 queries; usable species 34, genera 64; depth check 0/2003 fold queries fail (0.00%) -> ranks <= 300
+done; see scores/k2_protocol

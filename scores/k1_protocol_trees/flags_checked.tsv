@@ -1,0 +1,51 @@
+flag	group	read	label_genus	ssu_placed	its_placed	lsu_placed	real
+F1	Agaricales	EUK1104207					0
+F1	Agaricales	EUK1122308	Clitocybe				0
+F1	Agaricales	EUK1122333	Bolbitius		Bolbitius	Bolbitius	0
+F1	Agaricales	EUK1122471	Entoloma		Entoloma		0
+F1	Agaricales	EUK1122764	Mycenella		Mycenella	Mycenella	0
+F1	Agaricales	EUK1122908	Pholiota		Pholiota		0
+F1	Agaricales	EUK1149462	Bolbitius		Bolbitius		0
+F1	Agaricales	EUK1180309					0
+F1	Agaricales	EUK1180347				Henningsomyces	0
+F1	Agaricales	EUK1180892	Clavulinopsis		Clavulinopsis	Clavulinopsis	0
+F1	Agaricales	EUK1180953	Ramariopsis		Ramariopsis	Ramariopsis	0
+F1	Agaricales	EUK1181029	Cortinarius		Cortinarius		0
+F1	Agaricales	EUK1181230					0
+F1	Agaricales	EUK1181251	Cyphellopsis				0
+F1	Agaricales	EUK1181303	Clitopilus		Clitopilus	Clitopilus	0
+F1	Agaricales	EUK1181552	Hygrocybe		Hygrocybe	Hygrocybe	0
+F1	Agaricales	EUK1181658	Inocybe			Inocybe	0
+F1	Agaricales	EUK1182039	Mycena		Mycena		0
+F1	Agaricales	EUK1182105	Flagelloscypha			Flagelloscypha	0
+F1	Agaricales	EUK1182208					0
+F1	Agaricales	EUK1259806			Ramariopsis		0
+F1	Agaricales	EUK1260413	Hygrocybe		Hygrocybe	Hygrocybe	0
+F1	Agaricales	EUK1260551	Inocybe		Inocybe		0
+F1	Agaricales	EUK1260793	Mycena		Mycena	Mycena	0
+F1	Agaricales	EUK1260835	Flagelloscypha		Flagelloscypha		0
+F1	Agaricales	EUK1260837	Nidula		Pseudolyophyllum		0
+F1	Agaricales	EUK1261158	Cystoderma	Cladophialophora	Cystoderma	Cystoderma	1
+F1	Agaricales	EUK1357166	Amanita		Amanita	Amanita	0
+F1	Agaricales	EUK1357420	Hygrocybe		Hygrocybe	Hygrocybe	0
+F1	Agaricales	EUK1636507	Amanita		Amanita		0
+F1	Agaricales	EUK1803932	Mycena		Mycena		0
+F1	Agaricales	EUK1823490	Coprinopsis			Amanita	0
+F1	Agaricales	EUK1880100	Hygrocybe		Hygrocybe	Hygrocybe	0
+F1	Agaricales	EUK1885197			Rhizophlyctis		0
+F1	Agaricales	EUK1891305			Rhizophlyctis	Pleurotus	1
+F1	Agaricales	EUK1891336	Hygrocybe		Hygrocybe	Hygrocybe	0
+F1	Agaricales	EUK1895343	Ramariopsis		Ramariopsis	Ramariopsis	0
+F1	Agaricales	EUK1895946	Clitopilus		Clitopilus	Clitopilus	0
+F1	Agaricales	EUK1896697	Pholiotina		Pholiotina	Conocybe	1
+F1	Agaricales	EUK1898278	Entoloma		Entoloma		0
+F1	Glomeromycota	EUK1265968	Polonospora	Chlorarachnion	Polonospora	Polonospora	1
+F1	Hypocreales	AFQZ01001817_dup1	Aciculosporium		Aciculosporium	Aciculosporium	0
+F1	Hypocreales	EUK1178892	Acremonium		Acremonium	Acremonium	0
+F1	Hypocreales	EUK1178985	Beauveria	Parengyodontium	Beauveria	Beauveria	1
+F1	Hypocreales	EUK1179291	Gibberella		Fusarium	Fusarium	0
+F1	Hypocreales	EUK1636579_dup1	Aschersonia		Aschersonia	Aschersonia	0
+F1	Hypocreales	EUK1803474	Ilyonectria		Ilyonectria	Ilyonectria	0
+F1	Hypocreales	EUK1892811	Metarhizium		Metarhizium	Pyrenochaetopsis	1
+F1	Hypocreales	GCA_014621425	Cylindrodendrum	Dactylonectria	Cylindrodendrum		1
+F1	Hypocreales	LDPK01000059_dup1	Neonectria	Parengyodontium	Neonectria		1

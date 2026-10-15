@@ -1,0 +1,5 @@
+group	fold_queries	failing	failing_pct	ranks_used
+Glomeromycota	5620	2721	48.42	1000
+Agaricales	10598	628	5.93	1000
+Hypocreales	3602	214	5.94	1000
+Rhabditida	2003	0	0.00	300

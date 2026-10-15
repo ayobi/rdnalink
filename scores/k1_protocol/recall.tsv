@@ -1,0 +1,11 @@
+group	spike_type	caught	spikeins	recall_pct
+Glomeromycota	chimera	157	399	39.3
+Agaricales	chimera	31	400	7.8
+Hypocreales	chimera	46	400	11.5
+Rhabditida	chimera	225	342	65.8
+all	chimera	459	1541	29.8
+Glomeromycota	swap	2	200	1.0
+Agaricales	swap	0	200	0.0
+Hypocreales	swap	5	200	2.5
+Rhabditida	swap	99	183	54.1
+all	swap	106	783	13.5

@@ -1,0 +1,7 @@
+date	2026-10-15T10:36:17
+script	check_flag_trees.py	0a10ddb82699e4d2d7d6ba0482a60a65d5ab69ddfbdde1cb3dc1c7aa2249c25f
+iqtree	IQ-TREE multicore version 2.0.7 for Linux 64-bit built Apr  1 2024
+mafft	v7.526 (2024/Apr/26)
+input	scores/k1_amended/precision_sample.tsv	68fe0a6c01040e7f97e5ac52a48b30aaef77f8eff90772e76d1cc1f0ccc5ce4c
+seed	20261007
+support	70.0
