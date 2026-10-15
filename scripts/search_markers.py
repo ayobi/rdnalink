@@ -1,68 +1,84 @@
 #!/usr/bin/env python3
-"""Phase 0 search (protocol section 5): one MMseqs2 nucleotide search per marker.
+"""Phase 0, protocol section 5: one MMseqs2 search per marker (SSU, ITS, LSU).
 
-Queries are the test-group reads with all three windows >= 300 nt (section 4). The reference is every window
-cut for that marker, from the whole long-read set. A hit counts only if the alignment covers >= 80% of the shorter
-of the two windows. Identity = identical positions / alignment columns (MMseqs2 pident, seq-id-mode 0; its
-nident column is 0 in nucleotide searches without backtraces). Self-hits are dropped. Hits are ranked by identity,
-then bit score, then target id, and up to 1,000 are stored per query and marker: the protocol uses the first 300,
-and the stored 1,000 serve the depth-check rerun (section 5) without a new search.
+Queries are the windows of the reads of the four test groups (protocol section 3) that have all three windows of
+>= 300 nt (section 4, Amendment 1). The reference is every window of that marker in the whole long-read set. For
+each query the script keeps the hits whose alignment covers >= 80% of the shorter of the two windows, with
+identity = identical positions / alignment columns (gaps included, as BLAST's pident), ranked by identity, then
+the number of identical positions, then target ID. It stores the best --keep hits (default 1,000) with their rank. Scoring reads ranks
+<= 300 (section 5); the deeper ranks are there for the depth check, so a group that fails it is re-called from
+ranks <= 1,000 of the same search instead of searching again.
 
-Identical windows are searched once. Each marker's windows are collapsed to unique sequences, unique query
-sequences are searched against unique reference sequences, and every hit is expanded back to all reads that carry
-that exact sequence. Identical sequences give identical alignments, so this changes no hit's identity, coverage or
-bit score, only the time. It also makes the 1,000 prefilter slots go further. (MMseqs2 E-values shrink with the
-smaller database; only hits with E <= 1e-3 are reported, a bound no alignment covering 80% of a 300 nt window at
-the identities used here comes near.)
+Exhaustive by default. A capped search (--max-seqs N) passes only the N candidates with the best k-mer scores to
+alignment, and the pilots showed that no cap up to 30,000 gives a stable identity-ranked list (13 October 2026).
+So every candidate with a k-mer hit is aligned. MMseqs2's own no-prefilter mode (--prefilter-mode 2) is not used:
+it aligns every pair on the zero diagonal, which misaligns windows that start at different offsets.
 
-  python3 search_markers.py --windows ../windows/win --out full [--threads 8] [--kmer 13] [--max-queries 300]
+To save work, identical sequences are searched once: targets with the same window sequence are one database entry
+and their hits are copied to every read that carries them, and so are queries. The result is the same as searching
+every read, because identical sequences give identical alignments; ties are still broken by read ID. Queries run in
+chunks; a finished chunk is kept, so a stopped run resumes where it left off.
 
-Reads <windows>.ssu.fasta, <windows>.full.fasta (ITS) and <windows>.lsu.fasta. Writes, in --out:
-  queries.tsv               query id, group, SSU / ITS / LSU window lengths
-  hits.<marker>.tsv.gz      query, target, rank, identity, alnlen, qlen, tlen, cov_short, bits, evalue
-  summary.tsv               per group and marker: queries, with hits, full lists, saturated lists, ...
-  manifest.json             MMseqs2 version, commands, parameters, unique counts, hashes, counts, timings
---max-queries N searches a random sample of N queries (seed 20261007), for timing.
+Self hits (query == target) stay in the table and are marked; every fold drops them with the held-out reads, and
+K1 drops them explicitly.
+
+  python3 scripts/search_markers.py --windows windows --fasta ref/eukaryome_v2.1/General_EUK_longread_v2.1.fasta \\
+      --out search --threads 32
+
+Check the inputs first (read IDs, window orientation, query counts against Amendment 1 note 1), without searching:
+  python3 scripts/search_markers.py ... --check
+Pilot (the first N/4 queries of each group; writes to search/pilot/):
+  python3 scripts/search_markers.py ... --pilot 400
+
+Writes, per marker m: search/{m}.hits.tsv.gz, and search/queries.tsv (query reads, group, window lengths),
+search/counts.tsv and search/manifest.txt (MMseqs2 version, parameters, input and output SHA-256, counts, times).
 """
-import argparse, gzip, hashlib, json, os, random, shutil, statistics, subprocess, sys, time
-from collections import Counter, defaultdict
+import argparse
+import collections
+import concurrent.futures
+import datetime
+import gzip
+import hashlib
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
 
-MARKERS = [('ssu', 'ssu'), ('its', 'full'), ('lsu', 'lsu')]     # marker name, window file suffix
-TEST = [('Glomeromycota', 'p__Glomeromycota;'), ('Agaricales', 'o__Agaricales;'),
-        ('Hypocreales', 'o__Hypocreales;'), ('Rhabditida', 'o__Rhabditida;')]
-MIN_LEN = 300            # section 4
-MIN_COV = 0.80           # section 5: of the shorter window
-TOP = 300                # section 5: hits kept for the protocol
-STORE = 1000             # stored for the depth-check rerun
-MAX_SEQS = 1000          # MMseqs2 prefilter candidates per query (unique sequences)
-TIE = 0.002              # 0.2 percentage points (unique-best-name rule, section 6)
-SEED = 20261007
-FORMAT = 'query,target,pident,alnlen,qstart,qend,qlen,tstart,tend,tlen,bits,evalue'
-
-
-def key(h):
-    return h.split()[0].split(';')[0].split('|')[0]
-
-
-def group_of(h):
-    for name, pat in TEST:
-        if pat in h:
-            return name
-    return None
+MARKERS = ['ssu', 'its', 'lsu']
+GROUPS = [('Glomeromycota', 'p'), ('Agaricales', 'o'), ('Hypocreales', 'o'), ('Rhabditida', 'o')]
+# reads with all three windows >= 300 nt per group, Amendment 1 note 1 (section 3); the script checks them
+EXPECTED = {'Glomeromycota': 5546, 'Agaricales': 9436, 'Hypocreales': 3318, 'Rhabditida': 2901}
+TAX = re.compile(r'(?:^|[;|,])\s*([kpcofgs])__([^;|,]*)')        # as in eukaryome_inventory.py
+MIN_WINDOW = 300
+COLS = 'query,target,nident,alnlen,qstart,qend,qlen,tstart,tend,tlen,bits,evalue'
+HEADER = 'query\ttarget\trank\tidentity\tnident\talnlen\tqlen\ttlen\tqcov\ttcov\tbits\tevalue\tself\n'
+WINDOW_FILES = {'ssu': 'win.ssu.fasta', 'its': 'win.full.fasta', 'lsu': 'win.lsu.fasta'}   # cut_windows.py names
 
 
-def read_fasta(path):
-    head, chunks = None, []
-    with open(path) as fh:
+def read_id(header):
+    """The read ID shared by the long-read FASTA and the window FASTAs: the header up to the first space or ';'.
+    The script stops if any window ID is not a read ID, so a wrong guess here cannot pass silently."""
+    return re.split(r'[\s;]', header, maxsplit=1)[0]
+
+
+def opener(path):
+    return gzip.open(path, 'rt') if path.endswith('.gz') else open(path)
+
+
+def fasta(path):
+    head, seq = None, []
+    with opener(path) as fh:
         for line in fh:
             if line.startswith('>'):
                 if head is not None:
-                    yield head, ''.join(chunks)
-                head, chunks = line[1:].rstrip('\n'), []
+                    yield head, ''.join(seq)
+                head, seq = line[1:].rstrip('\n'), []
             else:
-                chunks.append(line.strip())
+                seq.append(line.strip())
     if head is not None:
-        yield head, ''.join(chunks)
+        yield head, ''.join(seq)
 
 
 def sha256(path):
@@ -73,216 +89,324 @@ def sha256(path):
     return h.hexdigest()
 
 
-def run(cmd, log, timings, label):
-    t = time.time()
-    log.write('$ ' + ' '.join(cmd) + '\n'); log.flush()
-    r = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT)
-    timings[label] = round(time.time() - t, 1)
-    if r.returncode != 0:
-        sys.exit(f'failed ({r.returncode}): {" ".join(cmd)}  - see {log.name}')
+def find_window(d, m):
+    for f in (WINDOW_FILES[m], WINDOW_FILES[m] + '.gz'):
+        if os.path.exists(os.path.join(d, f)):
+            return os.path.join(d, f)
+    sys.exit(f'no {WINDOW_FILES[m]}(.gz) in {d}; pass --{m} explicitly')
 
 
-def expand(rows_rep, members, q):
-    """rows_rep: hits of q's sequence to unique targets, sorted by (-identity, -bits). Expand each unique target to
-    all reads carrying it (minus q itself), order ties by target id, and keep the first STORE."""
-    out, i = [], 0
-    while i < len(rows_rep) and len(out) < STORE:
-        j, grp = i, []
-        while j < len(rows_rep) and rows_rep[j][0] == rows_rep[i][0] and rows_rep[j][1] == rows_rep[i][1]:
-            ident, bits, t_rep, aln, ql, tl, cov, ev = rows_rep[j]
-            for mbr in members[t_rep]:
-                if mbr != q:
-                    grp.append((mbr, ident, aln, ql, tl, cov, bits, ev))
-            j += 1
-        grp.sort(key=lambda r: r[0])
-        out.extend(grp[:STORE - len(out)])
-        i = j
-    return out
+def group_of(header):
+    tax = {}
+    for r, v in TAX.findall(header):
+        tax.setdefault(r, v.strip())
+    for g, r in GROUPS:
+        if tax.get(r) == g:
+            return g
+    return ''
 
 
-def filter_hits(m8, rep_queries, members, out_gz, stats_m, short_ref):
-    """Stream MMseqs2 output (one block per unique query sequence), filter by coverage, expand, rank, store."""
-    per_q, seen = {}, set()
-    raw = kept_lines = 0
+def ssu_orientation(path, n=2000):
+    """Share of SSU windows ending in the conserved 18S 3' end on each strand (a check that windows are oriented)."""
+    motif, rc = re.compile('GTAGGTGAACC'), re.compile('GGTTCACCTAC')
+    fw = rv = k = 0
+    for _, s in fasta(path):
+        fw += bool(motif.search(s[-200:].upper()))
+        rv += bool(rc.search(s[:200].upper()))
+        k += 1
+        if k >= n:
+            break
+    return fw, rv, k
 
-    def flush(r, rows_rep):
-        nonlocal kept_lines
-        rows_rep.sort(key=lambda x: (-x[0], -x[1]))
-        for q in rep_queries[r]:
-            rows = expand(rows_rep, members, q)
-            for i, (t, ident, aln, ql, tl, cov, bits, ev) in enumerate(rows, 1):
-                out.write(f'{q}\t{t}\t{i}\t{ident:.6f}\t{aln}\t{ql}\t{tl}\t{cov:.4f}\t{bits:g}\t{ev:g}\n')
-            n = len(rows)
-            best = rows[0][1] if rows else None
-            sat = n >= TOP and rows[TOP - 1][1] >= best - TIE
-            per_q[q] = (n, best, sat, bool(rows) and rows[0][0] in short_ref)
-            kept_lines += n
 
-    with open(m8) as fh, gzip.open(out_gz, 'wt') as out:
-        out.write('query\ttarget\trank\tidentity\talnlen\tqlen\ttlen\tcov_short\tbits\tevalue\n')
+def run(cmd, log):
+    log.write('$ ' + ' '.join(cmd) + '\n')
+    log.flush()
+    p = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT)
+    if p.returncode:
+        sys.exit(f'failed ({p.returncode}): {" ".join(cmd)}; see {log.name}')
+
+
+def filter_chunk(raw, part, members_t, members_q, keep, min_cov, keep_within=0.0, max_keep=0):
+    """Hits of one chunk of unique queries: coverage filter, ranking, expansion to reads; writes part (gzip TSV)
+    and returns {query read: hits kept} and the number of alignments dropped by the coverage filter."""
+    nhits, dropped = {}, 0
+    tmp = part + '.tmp'
+    with open(raw) as fh, gzip.open(tmp, 'wt', compresslevel=4) as fo:
+        def flush(uq, rows):
+            # rows: (identity, bits, rep, nident, alnlen, qlen, tlen, qcov, tcov, evalue) for unique targets
+            # rank by identity, then identical positions (longer alignments first), then read ID; bit scores and
+            # e-values are reported but not used, as they shift slightly with the composition of the database
+            rows.sort(key=lambda x: (-x[0], -x[3], x[2]))
+            best = rows[0][0] if rows else 0.0
+            cap = max(keep, max_keep)
+            take, n = [], 0
+            for r in rows:                                  # enough unique targets to fill `keep` reads (and, with
+                near = keep_within > 0 and r[0] >= best - keep_within   # keep_within, every read that close to the
+                tie = take and (r[0], r[3]) == (take[-1][0], take[-1][3])  # best, up to max_keep), plus every tie
+                if (n >= keep and not near and not tie) or (n >= cap and not tie):  # at the boundary
+                    break
+                take.append(r)
+                n += len(members_t[r[2]])
+            exp = sorted(((r[0], r[3], t, r) for r in take for t in members_t[r[2]]),
+                         key=lambda x: (-x[0], -x[1], x[2]))
+            lim = keep
+            if keep_within > 0:
+                lim = max(keep, sum(1 for x in exp if x[0] >= best - keep_within))
+            exp = exp[:min(lim, cap)]
+            for qread in members_q[uq]:
+                for i, (idn, _, t, r) in enumerate(exp, 1):
+                    fo.write(f'{qread}\t{t}\t{i}\t{idn:.4f}\t{r[3]}\t{r[4]}\t{r[5]}\t{r[6]}\t{r[7]:.4f}\t{r[8]:.4f}\t'
+                             f'{r[1]}\t{r[9]}\t{int(t == qread)}\n')
+                nhits[qread] = len(exp)
         cur, rows = None, []
         for line in fh:
-            c = line.rstrip('\n').split('\t')
-            r, t = c[0], c[1]
-            raw += 1
-            if r != cur:
+            v = line.rstrip('\n').split('\t')
+            if v[0] != cur:
                 if cur is not None:
                     flush(cur, rows)
-                    seen.add(cur)
-                if r in seen:
-                    sys.exit(f'{m8}: hits for {r} are not contiguous; sort the file by query first')
-                cur, rows = r, []
-            ident, aln = float(c[2]) / 100, int(c[3])     # pident: matches / alignment columns, 3 decimals
-            qs, qe, ql, ts, te, tl = (int(x) for x in c[4:10])
-            qcov = (abs(qe - qs) + 1) / ql
-            tcov = (abs(te - ts) + 1) / tl
-            cov = qcov if ql <= tl else tcov
-            if cov < MIN_COV or aln == 0:
+                cur, rows = v[0], []
+            ql, tl = int(v[6]), int(v[9])
+            qc = (int(v[5]) - int(v[4]) + 1) / ql
+            tc = (abs(int(v[8]) - int(v[7])) + 1) / tl
+            if (qc if ql <= tl else tc) < min_cov:
+                dropped += 1
                 continue
-            rows.append((ident, float(c[10]), t, aln, ql, tl, cov, float(c[11])))
+            nid, aln = int(v[2]), int(v[3])
+            rows.append((100 * nid / aln, float(v[10]), v[1], nid, aln, ql, tl, qc, tc, v[11]))
         if cur is not None:
             flush(cur, rows)
-    for qs_ in rep_queries.values():
-        for q in qs_:
-            per_q.setdefault(q, (0, None, False, False))
-    stats_m['raw_alignments'] = raw
-    stats_m['stored_hits'] = kept_lines
-    return per_q
+    for uq in members_q:                                    # queries with no hit at all
+        for qread in members_q[uq]:
+            nhits.setdefault(qread, 0)
+    os.replace(tmp, part)
+    with open(part + '.counts', 'w') as fh:
+        fh.write(f'#dropped\t{dropped}\n')
+        for qread, n in nhits.items():
+            fh.write(f'{qread}\t{n}\n')
+    os.remove(raw)
+    return nhits, dropped
+
+
+def read_counts(part):
+    nhits, dropped = {}, 0
+    with open(part + '.counts') as fh:
+        for line in fh:
+            k, v = line.rstrip('\n').split('\t')
+            if k == '#dropped':
+                dropped = int(v)
+            else:
+                nhits[k] = int(v)
+    return nhits, dropped
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--windows', required=True, help='prefix of the window FASTAs, e.g. ../windows/win')
-    ap.add_argument('--out', required=True)
-    ap.add_argument('--threads', type=int, default=8)
-    ap.add_argument('--split-memory-limit', default='0', help='MMseqs2 --split-memory-limit (e.g. 6G); 0 = all')
-    ap.add_argument('--kmer', type=int, default=13,
-                    help='MMseqs2 -k [13]; its default for nucleotides (15) needs a k-mer table of over 8 GB')
-    ap.add_argument('--max-queries', type=int, default=0)
-    ap.add_argument('--markers', default='ssu,its,lsu', help='comma-separated subset, for testing')
+    ap.add_argument('--windows', required=True, help='folder of the window FASTAs from cut_windows.py')
+    for m in MARKERS:
+        ap.add_argument(f'--{m}', help=f'{m.upper()} window FASTA (default: found in --windows)')
+    ap.add_argument('--fasta', required=True, help='the long-read FASTA, for the taxonomy of each read')
+    ap.add_argument('--out', default='search')
+    ap.add_argument('--markers', default='ssu,its,lsu', help='markers to search (default all three)')
+    ap.add_argument('--threads', type=int, default=os.cpu_count())
     ap.add_argument('--mmseqs', default='mmseqs')
-    ap.add_argument('--keep-tmp', action='store_true')
+    ap.add_argument('--keep', type=int, default=1000, help='hits stored per query and marker (scoring uses 300)')
+    ap.add_argument('--max-seqs', type=int, default=0, help='cap the k-mer candidates per query (0 = exhaustive)')
+    ap.add_argument('--keep-within', type=float, default=0.0, help='also store every hit within this many points '
+                    'of the best identity (e.g. 0.2, the tie of section 6), up to --max-keep hits')
+    ap.add_argument('--max-keep', type=int, default=20000)
+    ap.add_argument('--no-dedupe', action='store_true', help='search every read separately (for checking only)')
+    ap.add_argument('--evalue', default='1e6', help='MMseqs2 -e (default: no e-value filter; the protocol has none)')
+    ap.add_argument('--chunk', type=int, default=200, help='unique queries per MMseqs2 run')
+    ap.add_argument('--sens', type=float, default=5.7, help='MMseqs2 -s')
+    ap.add_argument('--min-cov', type=float, default=0.8)
+    ap.add_argument('--strand', type=int, default=1, help='MMseqs2 --strand (1 = forward; windows are oriented)')
+    ap.add_argument('--kmer', type=int, default=0, help='MMseqs2 -k (default: MMseqs2 picks 15 for nucleotides, '
+                    'whose index needs > 8 GB of RAM; 13 for small test machines only)')
+    ap.add_argument('--check', action='store_true', help='run the input checks and write queries.tsv, then stop')
+    ap.add_argument('--pilot', type=int, default=0, help='search only the first N/4 queries of each group')
+    ap.add_argument('--no-expected', action='store_true', help='skip the check against the Amendment 1 counts')
     a = ap.parse_args()
-    markers = [(m, s) for m, s in MARKERS if m in a.markers.split(',')]
+    markers = [m for m in a.markers.split(',') if m]
 
-    os.makedirs(a.out, exist_ok=True)
-    for d in ('fasta', 'db', 'res', 'tmp'):
-        os.makedirs(os.path.join(a.out, d), exist_ok=True)
-    P = lambda *x: os.path.join(a.out, *x)
-    timings, manifest = {}, {'started': time.strftime('%Y-%m-%d %H:%M:%S'), 'parameters': {
-        'min_window_len': MIN_LEN, 'min_cov_shorter': MIN_COV, 'top': TOP, 'stored': STORE,
-        'max_seqs_unique': MAX_SEQS, 'tie_pp': TIE * 100, 'seed': SEED, 'max_queries': a.max_queries,
-        'threads': a.threads, 'split_memory_limit': a.split_memory_limit, 'kmer': a.kmer,
-        'dereplication': 'exact sequence, per marker; hits expanded to every read carrying the sequence'}}
+    out = os.path.join(a.out, 'pilot') if a.pilot else a.out
+    os.makedirs(out, exist_ok=True)
+    log = open(os.path.join(out, 'mmseqs.log'), 'a')
+    t0 = time.time()
+    paths = {m: getattr(a, m) or find_window(a.windows, m) for m in MARKERS}
 
-    # 1. windows -> unique sequences per marker (rep = first read with that exact sequence)
-    lens, groups, inputs, rep_of, members = {}, {}, {}, {}, {}
-    t = time.time()
-    for m, suf in MARKERS:
-        path = f'{a.windows}.{suf}.fasta'
-        inputs[path] = sha256(path)
-        lens[m], rep_of[m], members[m] = {}, {}, defaultdict(list)
-        by_hash = {}
-        with open(P('fasta', f'ref.{m}.fasta'), 'w') as out:
-            for h, s in read_fasta(path):
-                k = key(h)
-                lens[m][k] = len(s)
-                if k not in groups:
-                    groups[k] = group_of(h)
-                d = hashlib.blake2b(s.upper().encode(), digest_size=16).digest()
-                r = by_hash.get(d)
-                if r is None:
-                    by_hash[d] = r = k
-                    out.write(f'>{k}\n{s}\n')
-                rep_of[m][k] = r
-                members[m][r].append(k)
-    timings['dereplicate'] = round(time.time() - t, 1)
-    manifest['inputs'] = inputs
-    queries = sorted(k for k, g in groups.items()
-                     if g and all(lens[m].get(k, 0) >= MIN_LEN for m, _ in MARKERS))
-    all_unique = {m: len({rep_of[m][q] for q in queries}) for m, _ in MARKERS}
-    print(f'all {len(queries)} queries: unique sequences ' + ', '.join(f'{m} {all_unique[m]}' for m, _ in MARKERS))
-    manifest['all_queries_unique'] = all_unique
-    if a.max_queries and a.max_queries < len(queries):
-        queries = sorted(random.Random(SEED).sample(queries, a.max_queries))
-    with open(P('queries.tsv'), 'w') as out:
-        out.write('query\tgroup\tssu_len\tits_len\tlsu_len\n')
-        for k in queries:
-            out.write(f'{k}\t{groups[k]}\t' + '\t'.join(str(lens[m][k]) for m, _ in MARKERS) + '\n')
-    gcount = Counter(groups[k] for k in queries)
-    print('windows: ' + ', '.join(f'{m} {len(lens[m])} ({len(members[m])} unique)' for m, _ in MARKERS))
-    print(f'queries: {len(queries)} (' + ', '.join(f'{g} {gcount[g]}' for g, _ in TEST) + ')')
+    grp, nfa = {}, set()
+    for h, _ in fasta(a.fasta):
+        nfa.add(read_id(h))
+        g = group_of(h)
+        if g:
+            grp[read_id(h)] = g
+    print(f'{len(nfa)} reads in {a.fasta}; {len(grp)} in the four test groups', flush=True)
 
-    # 2. MMseqs2, one search per marker, unique query sequences against unique reference sequences
+    wseq = {m: {} for m in MARKERS}
+    for m in MARKERS:
+        n = 0
+        for h, s in fasta(paths[m]):
+            wseq[m][read_id(h)] = s.upper()
+            n += 1
+        if n != len(wseq[m]):
+            sys.exit(f'{m}: {n} windows but {len(wseq[m])} distinct read IDs; adapt read_id()')
+        print(f'{m}: {len(wseq[m])} windows, {len(set(wseq[m].values()))} distinct sequences ({paths[m]})',
+              flush=True)
+    unknown = set().union(*[set(wseq[m]) for m in MARKERS]) - nfa
+    if unknown:
+        sys.exit(f'{len(unknown)} window IDs are not read IDs of the FASTA, e.g. {sorted(unknown)[:3]}: '
+                 'adapt read_id()')
+    fw, rv, k = ssu_orientation(paths['ssu'])
+    print(f'SSU orientation check: 18S 3\' end at the window end in {fw} of {k}, reverse complement at the start '
+          f'in {rv}', flush=True)
+    if rv > 0.01 * k and a.strand == 1:
+        sys.exit('some SSU windows look reverse-complemented; check cut_windows.py output or use --strand 2')
+
+    q = sorted(r for r, g in grp.items() if all(len(wseq[m].get(r, '')) >= MIN_WINDOW for m in MARKERS))
+    per_group = collections.Counter(grp[r] for r in q)
+    print('queries per group:', dict(per_group), flush=True)
+    if not a.no_expected and dict(per_group) != EXPECTED:
+        sys.exit(f'query counts differ from Amendment 1 note 1 ({EXPECTED}); stop and check the windows')
+    with open(os.path.join(out, 'queries.tsv'), 'w') as fh:
+        fh.write('read\tgroup\t' + '\t'.join(f'{m}_len' for m in MARKERS) + '\n')
+        for r in q:
+            fh.write(f'{r}\t{grp[r]}\t' + '\t'.join(str(len(wseq[m][r])) for m in MARKERS) + '\n')
+    if a.check:
+        print(f'checks passed; {len(q)} queries written to {out}/queries.tsv')
+        return
+    if a.pilot:
+        by_g = collections.defaultdict(list)
+        for r in q:
+            by_g[grp[r]].append(r)
+        q = sorted(x for g in by_g for x in by_g[g][:max(1, a.pilot // len(by_g))])
+
     ver = subprocess.run([a.mmseqs, 'version'], capture_output=True, text=True).stdout.strip()
-    manifest['mmseqs_version'] = ver
-    manifest['commands'], manifest['unique'] = {}, {}
-    summary_rows, per_marker = [], {}
-    for m, _ in markers:
-        rep_queries = defaultdict(list)
-        for q in queries:
-            rep_queries[rep_of[m][q]].append(q)
-        with open(P('fasta', f'query.{m}.fasta'), 'w') as out:
-            for h, s in read_fasta(P('fasta', f'ref.{m}.fasta')):
-                if h in rep_queries:
-                    out.write(f'>{h}\n{s}\n')
-        manifest['unique'][m] = {'reference_windows': len(lens[m]), 'reference_unique': len(members[m]),
-                                 'queries': len(queries), 'query_unique': len(rep_queries)}
-        log = open(P(f'mmseqs.{m}.log'), 'w')
-        cmds = [
-            [a.mmseqs, 'createdb', P('fasta', f'ref.{m}.fasta'), P('db', f'ref_{m}'), '--dbtype', '2'],
-            [a.mmseqs, 'createdb', P('fasta', f'query.{m}.fasta'), P('db', f'q_{m}'), '--dbtype', '2'],
-            [a.mmseqs, 'search', P('db', f'q_{m}'), P('db', f'ref_{m}'), P('res', m), P('tmp', m),
-             '--search-type', '3', '--strand', '1', '--max-seqs', str(MAX_SEQS), '--alignment-mode', '3',
-             '--seq-id-mode', '0', '-e', '1e-3', '-k', str(a.kmer), '--threads', str(a.threads),
-             '--split-memory-limit', a.split_memory_limit],
-            [a.mmseqs, 'convertalis', P('db', f'q_{m}'), P('db', f'ref_{m}'), P('res', m), P('res', f'{m}.m8'),
-             '--format-output', FORMAT, '--threads', str(a.threads)],
-        ]
-        manifest['commands'][m] = [' '.join(c) for c in cmds]
-        for i, c in enumerate(cmds):
-            run(c, log, timings, f'{m}.{["createdb_ref", "createdb_query", "search", "convertalis"][i]}')
-        log.close()
-        short_ref = {k for k, L in lens[m].items() if L < MIN_LEN}
-        st = {}
-        t = time.time()
-        per_q = filter_hits(P('res', f'{m}.m8'), rep_queries, members[m], P(f'hits.{m}.tsv.gz'), st, short_ref)
-        timings[f'{m}.filter'] = round(time.time() - t, 1)
-        per_marker[m] = st
-        print(f'{m}: {len(rep_queries)} unique queries against {len(members[m])} unique windows; '
-              f'{st["raw_alignments"]} alignments, {st["stored_hits"]} hits stored '
-              f'(search {timings[m + ".search"]:.0f} s)')
-        for g in [x for x, _ in TEST] + ['ALL']:
-            ks = [k for k in queries if g == 'ALL' or groups[k] == g]
-            if not ks:
+    counts, outputs, times, uniq = [], {}, {}, {}
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)        # filters chunk i while MMseqs2 runs i+1
+    for m in markers:
+        tm = time.time()
+        d = os.path.join(out, 'work', m)
+        os.makedirs(d, exist_ok=True)
+        # unique target sequences (representative = smallest read ID) and unique query sequences
+        by_seq = collections.defaultdict(list)
+        for r, s in wseq[m].items():
+            by_seq[s].append(r)
+        members_t, rep_of_seq = {}, {}
+        for s, rs in by_seq.items():
+            rs.sort()
+            if a.no_dedupe:
+                for r in rs:
+                    members_t[r] = [r]
+            else:
+                members_t[rs[0]] = rs
+            rep_of_seq[s] = rs[0]
+        qby = collections.defaultdict(list)
+        for r in q:
+            qby[r if a.no_dedupe else rep_of_seq[wseq[m][r]]].append(r)
+        uq = sorted(qby)
+        uniq[m] = (len(members_t), len(uq))
+        tdb = os.path.join(d, 'tdb')
+        if not os.path.exists(tdb + '.done'):
+            with open(os.path.join(d, 'target.fasta'), 'w') as fh:
+                for rep in sorted(members_t):
+                    fh.write(f'>{rep}\n{wseq[m][rep]}\n')
+            run([a.mmseqs, 'createdb', os.path.join(d, 'target.fasta'), tdb, '--dbtype', '2'], log)
+            idx = [a.mmseqs, 'createindex', tdb, os.path.join(d, 'idxtmp'), '--search-type', '3', '--strand',
+                   str(a.strand), '--threads', str(a.threads)] + (['-k', str(a.kmer)] if a.kmer else [])
+            run(idx, log)
+            open(tdb + '.done', 'w').close()
+        cap = a.max_seqs or len(members_t) + 1
+        params = ['--search-type', '3', '-s', str(a.sens), '--max-seqs', str(cap), '--max-accept', str(cap),
+                  '-e', a.evalue, '--strand', str(a.strand), '-a', '--threads', str(a.threads)]
+        if a.kmer:
+            params += ['-k', str(a.kmer)]
+        chunks = [uq[i:i + a.chunk] for i in range(0, len(uq), a.chunk)]
+        print(f'{m}: {len(q)} queries ({len(uq)} distinct) against {len(wseq[m])} windows ({len(members_t)} '
+              f'distinct); {len(chunks)} chunks; {"exhaustive" if not a.max_seqs else f"cap {a.max_seqs}"}',
+              flush=True)
+        futures, parts = [], []
+        for ci, ch in enumerate(chunks):
+            part = os.path.join(d, f'chunk_{ci:05d}.tsv.gz')
+            parts.append(part)
+            if os.path.exists(part) and os.path.exists(part + '.counts'):
                 continue
-            ns = [per_q[k][0] for k in ks]
-            bests = [per_q[k][1] for k in ks if per_q[k][1] is not None]
-            summary_rows.append([g, m, len(ks), sum(n > 0 for n in ns), sum(n >= TOP for n in ns),
-                                 sum(per_q[k][2] for k in ks), sum(per_q[k][3] for k in ks),
-                                 int(statistics.median(ns)),
-                                 f'{100 * statistics.median(bests):.2f}' if bests else ''])
-        if not a.keep_tmp:
-            os.remove(P('res', f'{m}.m8'))
-            shutil.rmtree(P('tmp', m), ignore_errors=True)
+            cd = os.path.join(d, f'c{ci:05d}')
+            shutil.rmtree(cd, ignore_errors=True)
+            os.makedirs(cd)
+            with open(os.path.join(cd, 'q.fasta'), 'w') as fh:
+                for rep in ch:
+                    fh.write(f'>{rep}\n{wseq[m][rep]}\n')
+            run([a.mmseqs, 'createdb', os.path.join(cd, 'q.fasta'), os.path.join(cd, 'qdb'), '--dbtype', '2'], log)
+            run([a.mmseqs, 'search', os.path.join(cd, 'qdb'), tdb, os.path.join(cd, 'aln'), os.path.join(cd, 'tmp')]
+                + params, log)
+            raw = os.path.join(d, f'c{ci:05d}.aln.tsv')
+            run([a.mmseqs, 'convertalis', os.path.join(cd, 'qdb'), tdb, os.path.join(cd, 'aln'), raw,
+                 '--format-output', COLS, '--threads', str(a.threads)], log)
+            shutil.rmtree(cd)
+            for f in futures:                                    # surface a filtering error early
+                if f.done():
+                    f.result()
+            futures.append(pool.submit(filter_chunk, raw, part, members_t, {u: qby[u] for u in ch}, a.keep,
+                                       a.min_cov, a.keep_within, a.max_keep))
+            el = time.time() - tm
+            print(f'  {m} chunk {ci + 1}/{len(chunks)} aligned ({el / 60:.1f} min so far)', flush=True)
+        for f in futures:
+            f.result()
+        # assemble: header, then the chunks in order (concatenated gzip members are one valid gzip file)
+        res = os.path.join(out, f'{m}.hits.tsv.gz')
+        nhits, dropped = {}, 0
+        with open(res, 'wb') as fo:
+            fo.write(gzip.compress(HEADER.encode()))
+            for part in parts:
+                with open(part, 'rb') as fi:
+                    shutil.copyfileobj(fi, fo)
+                nh, dr = read_counts(part)
+                nhits.update(nh)
+                dropped += dr
+        by_group = collections.defaultdict(list)
+        for r in q:
+            by_group[grp[r]].append(nhits.get(r, 0))
+        for g, xs in sorted(by_group.items()):
+            xs = sorted(xs)
+            counts.append({'marker': m, 'group': g, 'queries': len(xs), 'no_hit': sum(x == 0 for x in xs),
+                           'median_hits': xs[len(xs) // 2], 'full_300': sum(x >= 300 for x in xs),
+                           f'full_{a.keep}': sum(x >= a.keep for x in xs)})
+        times[m] = round(time.time() - tm)
+        outputs[m] = (res, ' '.join(params))
+        print(f'{m}: {times[m]} s; {sum(nhits.values())} hits kept; {dropped} alignments under {a.min_cov:.0%} '
+              f'coverage dropped', flush=True)
 
-    with open(P('summary.tsv'), 'w') as out:
-        hdr = ['group', 'marker', 'queries', 'with_hits', f'full_{TOP}', 'saturated', 'best_hit_short_window',
-               'median_hits_stored', 'median_best_identity_pct']
-        out.write('\t'.join(hdr) + '\n')
-        print('\t'.join(hdr))
-        for r in summary_rows:
-            out.write('\t'.join(map(str, r)) + '\n')
-            print('\t'.join(map(str, r)))
-    manifest['counts'] = {'queries': len(queries), 'queries_by_group': dict(gcount), 'per_marker': per_marker}
-    manifest['timings_s'] = timings
-    manifest['outputs'] = {f: sha256(P(f)) for f in ['queries.tsv', 'summary.tsv'] +
-                           [f'hits.{m}.tsv.gz' for m, _ in markers]}
-    manifest['finished'] = time.strftime('%Y-%m-%d %H:%M:%S')
-    with open(P('manifest.json'), 'w') as out:
-        json.dump(manifest, out, indent=1)
-    print(f'saturated = list full and the {TOP}th hit within {TIE * 100:g} pp of the best; '
-          f'best_hit_short_window = best hit is a window under {MIN_LEN} nt')
+    with open(os.path.join(out, 'counts.tsv'), 'w') as fh:
+        keys = list(counts[0])
+        fh.write('\t'.join(keys) + '\n')
+        for c in counts:
+            fh.write('\t'.join(str(c[k]) for k in keys) + '\n')
+    with open(os.path.join(out, 'manifest.txt'), 'w') as fh:
+        fh.write(f'date\t{datetime.datetime.now().isoformat(timespec="seconds")}\n')
+        fh.write(f'script\tsearch_markers.py\t{sha256(os.path.abspath(__file__))}\n')
+        fh.write(f'mmseqs2\t{ver}\n')
+        for m in markers:
+            fh.write(f'mmseqs2 search parameters\t{m}\t{outputs[m][1]}\n')
+        fh.write(f'search\t{"exhaustive: every candidate with a k-mer hit is aligned" if not a.max_seqs else "capped"}'
+                 f'; identical sequences searched once ({", ".join(f"{m} {uniq[m][0]} distinct targets, {uniq[m][1]} distinct queries" for m in markers)})\n')
+        fh.write('ids\tqueries and targets written as read_id() (header up to the first space or ;)\n')
+        fh.write(f'filter\tcoverage of the shorter window >= {a.min_cov}; identity = nident / alnlen\n')
+        fh.write(f'ranking\tidentity, then identical positions, then target ID; {a.keep} kept per query (scoring '
+                 f'uses 300)' + (f', plus every hit within {a.keep_within} points of the best, up to {a.max_keep}'
+                                 if a.keep_within else '') + '\n')
+        if a.pilot:
+            fh.write(f'pilot\tfirst {a.pilot // 4} queries of each group\n')
+        fh.write(f'input\t{a.fasta}\t{sha256(a.fasta)}\n')
+        for m in MARKERS:
+            fh.write(f'input\t{paths[m]}\t{sha256(paths[m])}\n')
+        for m in markers:
+            fh.write(f'output\t{outputs[m][0]}\t{sha256(outputs[m][0])}\n')
+        fh.write(f'queries\t{len(q)}\t' + ', '.join(f'{g} {per_group[g]}' for g, _ in GROUPS) + '\n')
+        for m in markers:
+            fh.write(f'time\t{m}\t{times[m]} s\n')
+        fh.write(f'time\ttotal\t{round(time.time() - t0)} s\n')
+    print(f'done in {round(time.time() - t0)} s; see {out}/counts.tsv and {out}/manifest.txt')
 
 
 if __name__ == '__main__':
