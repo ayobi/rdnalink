@@ -175,7 +175,8 @@ def main():
                 jobs.append((a.vsearch, out, sorted(qs), held | drop, tmp))
         for split in ('original', 'assembly'):
             for k in range(5):
-                qs = sorted(x['read'] for x in kk if x['group'] == grp and int(x[f'fold_{split}']) == k)
+                qs = sorted(x['read'] for x in kk if x['group'] == grp and int(x[f'fold_{split}']) == k
+                            and x['read'] not in drop)      # dropped reads leave the queries too (note 6)
                 held = set(qs)
                 if split == 'assembly':
                     for r in qs:
