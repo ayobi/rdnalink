@@ -1,0 +1,22 @@
+date	2026-10-15T06:02:45
+script	search_markers.py	17b5b7f7dec56afb432f15345692227d2af32367c7bff93a9694b932d4fb44a4
+mmseqs2	18.8cc5c
+mmseqs2 search parameters	ssu	--search-type 3 -s 5.7 --max-seqs 348055 --max-accept 348055 -e 1e6 --strand 1 -a --threads 32
+mmseqs2 search parameters	its	--search-type 3 -s 5.7 --max-seqs 371023 --max-accept 371023 -e 1e6 --strand 1 -a --threads 32
+mmseqs2 search parameters	lsu	--search-type 3 -s 5.7 --max-seqs 382392 --max-accept 382392 -e 1e6 --strand 1 -a --threads 32
+search	exhaustive: every candidate with a k-mer hit is aligned; identical sequences searched once (ssu 348054 distinct targets, 19443 distinct queries, its 371022 distinct targets, 19740 distinct queries, lsu 382391 distinct targets, 20691 distinct queries)
+ids	queries and targets written as read_id() (header up to the first space or ;)
+filter	coverage of the shorter window >= 0.8; identity = nident / alnlen
+ranking	identity, then identical positions, then target ID; 5000 kept per query (scoring uses 300), plus every hit within 0.2 points of the best, up to 20000
+input	ref/eukaryome_v2.1/General_EUK_longread_v2.1.fasta	536e3e10e4753e7123975e492d124ef5e94fd7a4e96964bc6039a66bf858166e
+input	windows/win.ssu.fasta	3ca7ef5c9d2d577c0ee9574f892094ec5c4ada307260290633a7e832e8785472
+input	windows/win.full.fasta	1ad07a26af5e803b95ca506f8cb6552e6aa8426bd938621d3f97caad72004c30
+input	windows/win.lsu.fasta	21f422e07cfc2bbf6e259eb64e85e5d4a39d9e7dbf164f25a725fe89dc17c673
+output	search/ssu.hits.tsv.gz	0f467dadab947383b285fe55f0f10d27731701118c9acf77450ca66db538a8f5
+output	search/its.hits.tsv.gz	555e61820f326d80bec9cdf87c5dce3f9b647b557c4a4ed5754044fc7c6bb529
+output	search/lsu.hits.tsv.gz	e441f9a7228d8edbf616a9a7290a155b5d50c829149af0b2983c2449057adefb
+queries	21201	Glomeromycota 5546, Agaricales 9436, Hypocreales 3318, Rhabditida 2901
+time	ssu	60060 s
+time	its	9832 s
+time	lsu	73879 s
+time	total	143779 s

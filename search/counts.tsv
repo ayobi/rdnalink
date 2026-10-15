@@ -1,0 +1,13 @@
+marker	group	queries	no_hit	median_hits	full_300	full_5000
+ssu	Agaricales	9436	0	5000	9435	8408
+ssu	Glomeromycota	5546	0	5000	5545	5542
+ssu	Hypocreales	3318	0	5000	3176	2983
+ssu	Rhabditida	2901	0	5000	2814	1807
+its	Agaricales	9436	0	406	5329	0
+its	Glomeromycota	5546	0	812	3635	0
+its	Hypocreales	3318	0	1971	3000	0
+its	Rhabditida	2901	0	17	176	0
+lsu	Agaricales	9436	0	5000	9426	8785
+lsu	Glomeromycota	5546	0	3428	4902	2
+lsu	Hypocreales	3318	0	5000	3313	3276
+lsu	Rhabditida	2901	0	153	520	0

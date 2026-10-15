@@ -7,3 +7,7 @@ windows/chunks/
 protocol.zip
 *.egg-info/
 .pytest_cache/
+search/*.hits.tsv.gz
+sintax/
+sintax_protocol/
+scoring.log
