@@ -7,7 +7,9 @@ UFBoot replicates, --seed 20261007, one thread). The tree is read unrooted, as b
 
   placement   the smallest side of a bipartition with UFBoot >= 70 that holds the read and >= 1 other sequence;
               if the other sequences on that side with a named genus all share one genus G (and there is >= 1),
-              the marker places the read in G; otherwise it places it nowhere
+              the marker places the read in G; otherwise it places it nowhere. With fewer than 4 sequences
+              (the read and fewer than 3 remaining hits) no tree is built: an unrooted tree that small has no
+              internal branch, so the marker places the read nowhere (note 5)
   F1 real     two markers place the read in different named genera
   F2 real     all three markers place the read in named genera other than its label
 
@@ -30,6 +32,7 @@ from compare_calls import read_id, taxonomy  # noqa: E402
 
 SEED = 20261007
 SUPPORT = 70.0
+MIN_TREE = 4        # an unrooted tree of 3 or fewer sequences has no internal branch (note 5)
 MARKERS = ['ssu', 'its', 'lsu']
 WINDOW_FILES = {'ssu': 'win.ssu.fasta', 'its': 'win.full.fasta', 'lsu': 'win.lsu.fasta'}
 
@@ -106,6 +109,8 @@ def parse_newick(s):
 
 
 def placement(treefile, read, genus):
+    if treefile is None:                    # too few sequences for a tree: no bipartition, places nowhere (note 5)
+        return None, 0
     splits, leaves = parse_newick(open(treefile).read())
     best = None
     for below, sup in splits:
@@ -130,6 +135,8 @@ def run_one(job):
     with open(prefix + '.fasta', 'w') as fh:
         for r, s in seqs:
             fh.write(f'>{r}\n{s}\n')
+    if len(seqs) < MIN_TREE:
+        return None
     with open(prefix + '.aln', 'w') as fh:
         subprocess.run([mafft, '--auto', '--quiet', prefix + '.fasta'], stdout=fh, check=True)
     subprocess.run([iqtree, '-s', prefix + '.aln', '-B', '1000', '-T', '1', '--seed', str(SEED), '-pre', prefix,

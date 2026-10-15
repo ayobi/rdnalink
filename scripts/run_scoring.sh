@@ -29,10 +29,19 @@ for t in "$PY" vsearch mafft iqtree2; do command -v "$t" > /dev/null || die "$t 
 echo "   $($PY --version 2>&1); $(vsearch --version 2>&1 | head -1); mafft $(mafft --version 2>&1 | head -1); $(iqtree2 --version 2>&1 | grep -m1 -i version)"
 
 step "2. locks (protocol, amendments, notes and the files they hash)"
-for f in protocol/LOCK*.sha256; do
-    grep -v '^#' "$f" | sha256sum -c --quiet - || die "$f does not match"
-    echo "   $f: OK"
-done
+# Each file is checked against the newest lock that lists it (lock files in C sort order: LOCK, LOCK_AMENDMENT1,
+# LOCK_NOTE2, ... which is the order they were made). Only a script may be listed again by a later lock, when a
+# dated note records a code fix (section 10; note 5); protocol documents and data never change.
+for f in $(ls protocol/LOCK*.sha256 | LC_ALL=C sort); do
+    grep -v '^#' "$f" | awk -v f="$f" 'NF==2{print $2"\t"$1"\t"f}'
+done > "$SC/.lock_entries"
+awk -F'\t' '($1 in h) && h[$1]!=$2 {print "   " $1 ": " src[$1] " superseded by " $3} {h[$1]=$2; src[$1]=$3}' \
+    "$SC/.lock_entries"
+awk -F'\t' '($1 in h) && h[$1]!=$2 && $1 !~ /^scripts\// {print "STOP: " $1 " has two locked hashes"; bad=1}
+    {h[$1]=$2} END{exit bad}' "$SC/.lock_entries" || exit 1
+awk -F'\t' '{h[$1]=$2} END{for (p in h) print h[p]"  "p}' "$SC/.lock_entries" | LC_ALL=C sort -k2 > "$SC/.locks.sha256"
+sha256sum -c --quiet "$SC/.locks.sha256" || die "a locked file does not match its newest lock"
+echo "   $(wc -l < "$SC/.locks.sha256") files match their newest lock ($(ls protocol/LOCK*.sha256 | wc -l) lock files)"
 
 step "3. search outputs against search/manifest.txt"
 [ -f search/manifest.txt ] || die "search/manifest.txt missing: has the search finished?"
